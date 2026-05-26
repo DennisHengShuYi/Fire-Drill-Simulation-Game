@@ -39,6 +39,15 @@ var dialed_number: String = ""
 # Teleport target (outside assembly point)
 var teleport_target_pos: Vector3 = Vector3(0, 0, 0)
 var is_outside: bool = false
+var has_shown_crouch_tip: bool = false
+var has_wet_towel: bool = false
+
+# Timer settings
+@export var time_limit: float = 90.0
+var current_time: float
+var is_timer_active: bool = true
+var timer_label: Label = null
+var in_elevator_sequence: bool = false
 
 func _ready():
 	# Capture mouse
@@ -59,6 +68,8 @@ func _ready():
 			elif btn.name == "BtnCall":
 				btn.pressed.connect(call_dialer)
 	
+	current_time = time_limit
+	setup_timer_hud()
 	show_log_message("FIRE ALARM RINGING! Find a way out safely!")
 
 func _input(event):
@@ -73,12 +84,37 @@ func _input(event):
 		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-80.0), deg_to_rad(80.0))
 
 func _physics_process(delta):
-	# Handle phone state
-	if phone_active:
-		# Stop movement
+	# Handle phone state and elevator sequence
+	if phone_active or in_elevator_sequence:
 		velocity = Vector3.ZERO
 		move_and_slide()
+		if in_elevator_sequence:
+			# Shake the camera during elevator rumble
+			camera.position.x = randf_range(-0.015, 0.015)
+			camera.position.y = lerp(camera.position.y, stand_height - 0.2 + randf_range(-0.015, 0.015), 5.0 * delta)
 		return
+		
+	# Update countdown timer
+	if is_timer_active:
+		current_time -= delta
+		if current_time <= 0.0:
+			current_time = 0.0
+			is_timer_active = false
+			GameManager.trigger_game_over(
+				"You ran out of time! The fire spread and trapped you in the building.",
+				"BOMBA TIP: Fire spreads incredibly fast—often in less than 2-3 minutes. Never delay your evacuation to collect personal belongings. Every second counts!"
+			)
+		
+		if timer_label:
+			var minutes = int(current_time) / 60
+			var seconds = int(current_time) % 60
+			timer_label.text = "%02d:%02d" % [minutes, seconds]
+			
+			if current_time < 30.0:
+				var pulse = (sin(Time.get_ticks_msec() * 0.01) + 1.0) * 0.5
+				timer_label.add_theme_color_override("font_color", Color(1.0, 0.2 + pulse * 0.4, 0.2 + pulse * 0.4))
+			else:
+				timer_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
 		
 	# Apply gravity
 	if not is_on_floor():
@@ -98,6 +134,7 @@ func _physics_process(delta):
 	var current_capsule: CapsuleShape3D = collision_shape.shape
 	current_capsule.height = lerp(current_capsule.height, target_height, crouch_speed * delta)
 	camera.position.y = lerp(camera.position.y, target_height - 0.2, crouch_speed * delta)
+	camera.position.x = lerp(camera.position.x, 0.0, 8.0 * delta)
 	
 	# Movement input
 	var input_dir = Vector2.ZERO
@@ -111,6 +148,8 @@ func _physics_process(delta):
 	var current_speed = speed
 	if is_crouching:
 		current_speed = speed * 0.5
+	elif Input.is_action_pressed("sprint"):
+		current_speed = sprint_speed
 		
 	if dir:
 		velocity.x = dir.x * current_speed
@@ -151,9 +190,15 @@ func check_interaction():
 func process_smoke_inhalation(delta):
 	# If in smoke zone
 	if in_smoke_zone:
+		if not has_shown_crouch_tip:
+			has_shown_crouch_tip = true
+			show_log_message("Stay low! Crouch (C or Ctrl) to reduce smoke inhalation.")
+			
+		var multiplier = 0.5 if has_wet_towel else 1.0
+		
 		if not is_crouching:
 			# Standing in smoke is deadly
-			current_oxygen -= 15.0 * delta
+			current_oxygen -= 15.0 * delta * multiplier
 			GameManager.stood_up_in_smoke = true
 			
 			# Cough feedback
@@ -161,18 +206,34 @@ func process_smoke_inhalation(delta):
 			if cough_timer >= 1.5:
 				cough_timer = 0.0
 				show_log_message("*COUGH* Heavy smoke! Stay Low (Crouch)!")
+				play_cough_sound()
 				# Screen shake
 				camera.position.x += randf_range(-0.05, 0.05)
 				camera.position.y += randf_range(-0.05, 0.05)
 		else:
 			# Crouched: safe or very minor inhalation
-			current_oxygen -= 1.0 * delta # Slow drain to keep tension, but very safe
+			current_oxygen -= 1.0 * delta * multiplier # Slow drain to keep tension, but very safe
 	else:
 		# Recover oxygen slowly if outside or in clean air
 		current_oxygen = move_toward(current_oxygen, max_oxygen, 5.0 * delta)
 		
 	current_oxygen = clamp(current_oxygen, 0.0, max_oxygen)
 	oxygen_bar.value = current_oxygen
+	
+	# Update HUD label for Wet Towel
+	var hud_label = $HUD/OxygenPanel/Label
+	if has_wet_towel:
+		hud_label.text = "Oxygen (Wet Towel Active)"
+		hud_label.add_theme_color_override("font_color", Color(0.2, 0.9, 0.5))
+	else:
+		hud_label.text = "Oxygen / Air Supply"
+		hud_label.remove_theme_color_override("font_color")
+	
+	if current_oxygen < 25.0:
+		var pulse = (sin(Time.get_ticks_msec() * 0.01) + 1.0) * 0.5
+		oxygen_bar.modulate = Color(1.0, 0.2 + pulse * 0.4, 0.2 + pulse * 0.4)
+	else:
+		oxygen_bar.modulate = Color(1.0, 1.0, 1.0)
 	
 	# Update smoke overlay transparency based on oxygen
 	var target_alpha = 0.0
@@ -235,3 +296,31 @@ func call_dialer():
 		phone_instructions.text = "Wrong Number! Try again (Malaysia Emergency)."
 		dialed_number = ""
 		phone_display.text = "ERR"
+
+func play_cough_sound():
+	var aud = AudioStreamPlayer.new()
+	aud.script = load("res://scripts/synth_audio.gd")
+	aud.synth_type = "cough"
+	add_child(aud)
+
+func setup_timer_hud():
+	var timer_panel = Panel.new()
+	timer_panel.name = "TimerPanel"
+	var hud_style = $HUD/OxygenPanel.get_theme_stylebox("panel")
+	timer_panel.add_theme_stylebox_override("panel", hud_style)
+	timer_panel.size = Vector2(180, 70)
+	timer_panel.position = Vector2(20, 20)
+	$HUD.add_child(timer_panel)
+
+	var timer_title = Label.new()
+	timer_title.text = "Time Remaining"
+	timer_title.add_theme_font_size_override("font_size", 12)
+	timer_title.position = Vector2(15, 10)
+	timer_panel.add_child(timer_title)
+
+	timer_label = Label.new()
+	timer_label.text = "01:30"
+	timer_label.add_theme_font_size_override("font_size", 22)
+	timer_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+	timer_label.position = Vector2(15, 28)
+	timer_panel.add_child(timer_label)

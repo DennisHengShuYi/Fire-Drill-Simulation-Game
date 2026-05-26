@@ -13,6 +13,7 @@ var used_lift: bool = false
 var used_stairs: bool = false
 var called_999: bool = false
 var crouched_in_smoke: bool = false
+var got_wet_towel: bool = false
 
 func reset_state():
 	game_over_reason = ""
@@ -25,6 +26,7 @@ func reset_state():
 	used_stairs = false
 	called_999 = false
 	crouched_in_smoke = false
+	got_wet_towel = false
 
 func _ready():
 	setup_inputs()
@@ -37,6 +39,7 @@ func setup_inputs():
 		"move_left": [KEY_A, KEY_LEFT],
 		"move_right": [KEY_D, KEY_RIGHT],
 		"crouch": [KEY_C, KEY_CTRL],
+		"sprint": [KEY_SHIFT],
 		"interact": [KEY_E],
 		"feel_door": [KEY_F]
 	}

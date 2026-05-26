@@ -1,13 +1,14 @@
 extends Area3D
 
-func _ready():
-	body_entered.connect(_on_body_entered)
-	body_exited.connect(_on_body_exited)
-
-func _on_body_entered(body: Node3D):
-	if body.name == "Player" or body.has_method("process_smoke_inhalation"):
-		body.in_smoke_zone = true
-
-func _on_body_exited(body: Node3D):
-	if body.name == "Player" or body.has_method("process_smoke_inhalation"):
-		body.in_smoke_zone = false
+func _physics_process(_delta):
+	var player_in_smoke = false
+	for body in get_overlapping_bodies():
+		if body.name == "Player" or body.has_method("process_smoke_inhalation"):
+			body.in_smoke_zone = true
+			player_in_smoke = true
+			break
+	if not player_in_smoke:
+		# Player is at root scene level
+		var player = get_node_or_null("/root/Level/Player")
+		if player:
+			player.in_smoke_zone = false
