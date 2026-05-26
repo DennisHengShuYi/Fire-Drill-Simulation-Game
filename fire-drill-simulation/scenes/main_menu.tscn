@@ -1,0 +1,265 @@
+[gd_scene format=3 uid="uid://6n8j4ayo2ejk"]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Panel"]
+bg_color = Color(0.12, 0.1, 0.08, 0.8)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.8, 0.35, 0.1, 0.9)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Tutorial"]
+bg_color = Color(0.08, 0.08, 0.1, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.1, 0.5, 0.8, 0.9)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Btn"]
+bg_color = Color(0.3, 0.15, 0.05, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.6, 0.3, 0.1, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.02, 0.0, 1)
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -220.0
+offset_right = 250.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_Panel")
+
+[node name="Title" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 30.0
+offset_right = 200.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.95, 0.45, 0.1, 1)
+theme_override_font_sizes/font_size = 38
+text = "FIREDRILL"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 80.0
+offset_right = 200.0
+offset_bottom = 105.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 14
+text = "Home Fire Safety Simulator"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Endorsement" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 110.0
+offset_right = 200.0
+offset_bottom = 135.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.9, 0.75, 0.2, 1)
+theme_override_font_sizes/font_size = 12
+text = "★ Endorsed by BOMBA Malaysia ★"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StartBtn" type="Button" parent="Panel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -45.0
+offset_right = 180.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "Start Safety Drill"
+
+[node name="TutorialBtn" type="Button" parent="Panel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = 20.0
+offset_right = 180.0
+offset_bottom = 70.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "Safety Protocol (How to Play)"
+
+[node name="ExitBtn" type="Button" parent="Panel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = 85.0
+offset_right = 180.0
+offset_bottom = 135.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "Exit Game"
+
+[node name="TutorialPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -240.0
+offset_right = 320.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_Tutorial")
+
+[node name="Title" type="Label" parent="TutorialPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 20.0
+offset_right = 200.0
+offset_bottom = 50.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.2, 0.6, 0.9, 1)
+theme_override_font_sizes/font_size = 20
+text = "BOMBA Evacuation Protocols"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TutorialPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 70.0
+offset_right = -30.0
+offset_bottom = -90.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="Movement" type="Label" parent="TutorialPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🎮 CONTROLS:
+• WASD keys to move around.
+• Mouse to look around.
+• Crouch (C or Ctrl) to stay low."
+autowrap_mode = 2
+
+[node name="Rule1" type="Label" parent="TutorialPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "🚪 1. FEEL DOORS (Press F)
+Never open a door without feeling the door or its handle first. If it is hot, there is a fire on the other side. Opening it feeds oxygen to the fire, causing a deadly explosion/backdraft!"
+autowrap_mode = 2
+
+[node name="Rule2" type="Label" parent="TutorialPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "💨 2. STAY LOW (Hold C or Ctrl)
+Smoke rises to the ceiling and contains toxic gases. When walking through hallways filled with smoke, you MUST crouch. If you stand upright, you will suffocate!"
+autowrap_mode = 2
+
+[node name="Rule3" type="Label" parent="TutorialPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "🛗 3. NEVER USE LIFTS
+During a fire, lifts can lose power, trapping you inside, while the shaft acts like a chimney. Always look for the green Fire Exit door and use the stairs!"
+autowrap_mode = 2
+
+[node name="Rule4" type="Label" parent="TutorialPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "📞 4. DIAL 999
+Once you have safely reached the outside assembly point, immediately dial 999 to alert the fire department."
+autowrap_mode = 2
+
+[node name="CloseBtn" type="Button" parent="TutorialPanel"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -65.0
+offset_right = 100.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "I Understand"

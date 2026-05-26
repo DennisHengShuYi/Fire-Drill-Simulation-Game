@@ -1,0 +1,303 @@
+[gd_scene load_steps=5 format=3 uid="uid://cx123456789ab"]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_script"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_HUD"]
+bg_color = Color(0.1, 0.1, 0.12, 0.65)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.3, 0.35, 0.8)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Btn"]
+bg_color = Color(0.2, 0.2, 0.25, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.4, 0.45, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="Player" type="CharacterBody3D"]
+collision_layer = 1
+collision_mask = 3
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="RayCast3D" type="RayCast3D" parent="Camera3D"]
+target_position = Vector3(0, 0, -2.5)
+collision_mask = 2
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="SmokeOverlay" type="ColorRect" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.05, 0.05, 0)
+
+[node name="Crosshair" type="ColorRect" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0.6)
+
+[node name="PromptLabel" type="Label" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = 40.0
+offset_right = 300.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "[E] Open Door / [F] Feel Door"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="OxygenPanel" type="Panel" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -260.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 90.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_HUD")
+
+[node name="Label" type="Label" parent="HUD/OxygenPanel"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 10.0
+offset_right = 225.0
+offset_bottom = 33.0
+text = "Oxygen / Air Supply"
+font_size = 14
+
+[node name="OxygenBar" type="ProgressBar" parent="HUD/OxygenPanel"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 35.0
+offset_right = 225.0
+offset_bottom = 55.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+value = 100.0
+
+[node name="LogPanel" type="Panel" parent="HUD"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -350.0
+offset_top = 20.0
+offset_right = 350.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_HUD")
+
+[node name="LogLabel" type="Label" parent="HUD/LogPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 15.0
+offset_right = -15.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Find a way to escape!"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="PhonePanel" type="Panel" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -240.0
+offset_right = 160.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_HUD")
+
+[node name="Title" type="Label" parent="HUD/PhonePanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 15.0
+offset_right = 100.0
+offset_bottom = 38.0
+grow_horizontal = 2
+text = "EMERGENCY CALL"
+horizontal_alignment = 1
+
+[node name="Display" type="Label" parent="HUD/PhonePanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -130.0
+offset_top = 50.0
+offset_right = 130.0
+offset_bottom = 90.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.2, 0.9, 0.2, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+text = "---"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Instructions" type="Label" parent="HUD/PhonePanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -130.0
+offset_top = 100.0
+offset_right = 130.0
+offset_bottom = 125.0
+grow_horizontal = 2
+text = "Type the Emergency Number"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="GridContainer" type="GridContainer" parent="HUD/PhonePanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -110.0
+offset_top = -90.0
+offset_right = 110.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 15
+columns = 3
+
+[node name="1" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "1"
+
+[node name="2" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "2"
+
+[node name="3" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "3"
+
+[node name="4" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "4"
+
+[node name="5" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "5"
+
+[node name="6" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "6"
+
+[node name="7" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "7"
+
+[node name="8" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "8"
+
+[node name="9" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "9"
+
+[node name="BtnClear" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "C"
+
+[node name="0" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "0"
+
+[node name="BtnCall" type="Button" parent="HUD/PhonePanel/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_Btn")
+text = "Call"
