@@ -76,6 +76,7 @@ ext_resources = [
     '[ext_resource type="Script" path="res://scripts/synth_audio.gd" id="5_synth_audio"]',
     '[ext_resource type="Script" path="res://scripts/synth_audio_3d.gd" id="6_synth_audio_3d"]',
     '[ext_resource type="Script" path="res://scripts/elevator.gd" id="7_elevator"]',
+    '[ext_resource type="Script" path="res://scripts/fire_area.gd" id="8_fire_area"]',
 ]
 
 # ── materials as sub-resources ───────────────────────────────────────────────
@@ -130,6 +131,47 @@ M_BALCONY_SIGN    = mat("Mat_BalconySign",   color(0.9, 0.85, 0.1),
 M_SMOKE           = mat("Mat_Smoke",         color(0.15, 0.15, 0.15, 0.55),
                          transparency=1)
 M_SIGN_POST       = mat("Mat_SignPost",      color(0.5, 0.5, 0.5), roughness=0.6)
+
+# Particle System Resources
+add_sub("Mat_FireParticle", "StandardMaterial3D", [
+    'transparency = 1',
+    'shading_mode = 0',
+    'vertex_color_use_as_albedo = true',
+    'albedo_color = Color(1, 1, 1, 1)',
+    'billboard_mode = 1',
+    'billboard_keep_scale = true',
+])
+add_sub("Mesh_FireParticle", "QuadMesh", [
+    'material = SubResource("Mat_FireParticle")',
+    'size = Vector2(0.6, 0.6)',
+])
+add_sub("Grad_Fire", "Gradient", [
+    'offsets = PackedFloat32Array(0, 0.15, 0.55, 1)',
+    'colors = PackedColorArray(1, 1, 0.3, 1, 1, 0.45, 0, 1, 0.8, 0.08, 0, 0.8, 0.15, 0.15, 0.15, 0)',
+])
+add_sub("Mat_SmokeParticle", "StandardMaterial3D", [
+    'transparency = 1',
+    'vertex_color_use_as_albedo = true',
+    'albedo_color = Color(1, 1, 1, 1)',
+    'billboard_mode = 1',
+    'billboard_keep_scale = true',
+])
+add_sub("Mesh_SmokeParticle", "QuadMesh", [
+    'material = SubResource("Mat_SmokeParticle")',
+    'size = Vector2(1.0, 1.0)',
+])
+add_sub("Grad_Smoke", "Gradient", [
+    'offsets = PackedFloat32Array(0, 0.3, 0.8, 1)',
+    'colors = PackedColorArray(0.35, 0.35, 0.35, 0.3, 0.25, 0.25, 0.25, 0.5, 0.15, 0.15, 0.15, 0.3, 0.1, 0.1, 0.1, 0)',
+])
+
+# Particle Scale Curves
+add_sub("Curve_FireScale", "Curve", [
+    '_data = [Vector2(0, 1.2), 0.0, -1.0, 0, 0, Vector2(1, 0.2), -1.0, 0.0, 0, 0]'
+])
+add_sub("Curve_SmokeScale", "Curve", [
+    '_data = [Vector2(0, 0.4), 0.0, 1.8, 0, 0, Vector2(1, 2.2), 1.8, 0.0, 0, 0]'
+])
 
 # Collision shapes
 def box_shape(sid, sx, sy, sz):
@@ -296,27 +338,65 @@ def sink_static(name, parent, px, py, pz, sx, sy, sz):
 
 def smoke_particle(name, parent, px, py, pz, col=(0.15,0.15,0.15,0.6),
                    vel=0.5, spread=40, lifetime=3.0, is_fire=False):
-    """Emit a visible smoke/fire marker using a glowing CSGBox3D.
-    CPUParticles3D API is complex and version-sensitive; a static
-    semi-transparent glowing box is a safe cross-version stand-in."""
+    """Emit a dynamic CPUParticles3D for high visibility and realistic animation."""
     if is_fire:
-        mat_id = M_EXIT_SIGN  # bright green glow repurposed as fire glow marker
-        # Use the flickering fire material instead
-        sx, sy, sz = 0.6, 0.8, 0.6
-        # Emit an OmniLight for the fire glow effect (already done in Kitchen)
-        # Just add a small semi-transparent box as visual marker
-        node(name, "CSGBox3D", parent, [
+        props = [
             f'transform = {tf(px, py, pz)}',
-            f'size = Vector3({sx}, {sy}, {sz})',
-            f'material = SubResource("{M_WARN_SIGN}")',
+            'amount = 50',
+            f'lifetime = {lifetime}',
+            'mesh = SubResource("Mesh_FireParticle")',
+            'emission_shape = 1', # Sphere
+            'emission_sphere_radius = 0.4',
+            'direction = Vector3(0, 1, 0)',
+            f'spread = {spread}',
+            'gravity = Vector3(0, 3.0, 0)',
+            f'initial_velocity_min = {vel * 0.8}',
+            f'initial_velocity_max = {vel * 1.6}',
+            'angular_velocity_min = -90.0',
+            'angular_velocity_max = 90.0',
+            'angle_min = -180.0',
+            'angle_max = 180.0',
+            'scale_amount_min = 0.6',
+            'scale_amount_max = 1.4',
+            'scale_amount_curve = SubResource("Curve_FireScale")',
+            'color_ramp = SubResource("Grad_Fire")',
+        ]
+        node(name, "CPUParticles3D", parent, props)
+
+        # Add a fire hazard Area3D trigger to detect and penalize player when they stand in it
+        area_name = f"{name}_Hazard"
+        node(area_name, "Area3D", parent, [
+            f'transform = {tf(px, py + 0.6, pz)}',
+            'collision_mask = 1',
+            'script = ExtResource("8_fire_area")',
+        ])
+        shp_fire = add_sub(f"Shp_{area_name}", "BoxShape3D", ['size = Vector3(1.2, 1.2, 1.2)'])
+        node("CollisionShape3D", "CollisionShape3D", f"{parent}/{area_name}", [
+            f'shape = SubResource("{shp_fire}")',
         ])
     else:
-        # Smoke: a dark semi-transparent box
-        node(name, "CSGBox3D", parent, [
+        props = [
             f'transform = {tf(px, py, pz)}',
-            f'size = Vector3(0.8, 0.8, 0.8)',
-            f'material = SubResource("{M_SMOKE}")',
-        ])
+            'amount = 60',
+            f'lifetime = {lifetime}',
+            'mesh = SubResource("Mesh_SmokeParticle")',
+            'emission_shape = 1', # Sphere
+            'emission_sphere_radius = 0.8',
+            'direction = Vector3(0, 1, 0)',
+            f'spread = {spread}',
+            'gravity = Vector3(0, 0.8, 0)',
+            f'initial_velocity_min = {vel * 0.4}',
+            f'initial_velocity_max = {vel * 1.0}',
+            'angular_velocity_min = -25.0',
+            'angular_velocity_max = 25.0',
+            'angle_min = -180.0',
+            'angle_max = 180.0',
+            'scale_amount_min = 0.6',
+            'scale_amount_max = 1.8',
+            'scale_amount_curve = SubResource("Curve_SmokeScale")',
+            'color_ramp = SubResource("Grad_Smoke")',
+        ]
+        node(name, "CPUParticles3D", parent, props)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BEGIN BUILDING NODES
@@ -391,11 +471,17 @@ csg_box("Ceiling", HW, -0.5, 2.75, -8.0, 3.0, 0.1, 6.0, M_DRYWALL2)
 # North wall spans X = [-2.0, 1.0] at Z = -11.1
 csg_box("WallNorth", HW, -0.5, 1.4, -11.1, 3.0, 2.8, 0.2, M_DRYWALL2)
 
+# Smoke drifting into Hallway from Living Room
+smoke_particle("HallwaySmoke", HW, -0.5, 2.5, -8.0, vel=0.2, lifetime=4.0)
+
 # Props in Master Bedroom
 csg_box("Bed", MB, -4.6, 0.3, -9.4, 1.8, 0.6, 2.2, M_WOOD_PROP, collision=True)
 csg_box("BedMattress", MB, -4.6, 0.62, -9.4, 1.7, 0.15, 2.1, M_FABRIC, collision=False)
 csg_box("Desk", MB, -7.8, 0.4, -9.8, 1.2, 0.8, 1.4, M_WOOD_PROP)
 csg_box("Chair", MB, -7.8, 0.4, -8.5, 0.6, 0.8, 0.6, M_FABRIC)
+
+# Light smoke seeping into Master Bedroom
+smoke_particle("MasterBedroomSmoke", MB, -5.5, 2.5, -8.0, vel=0.15, lifetime=3.5)
 
 # Bedroom door (on East wall at X = -2.0, spanning Z = [-6.5, -5.5])
 door_static("BedroomDoor", G, -2.0, 0, -6.0,
@@ -436,6 +522,9 @@ csg_box("WallEast_Top", B2, 5.5, 2.4, -8.0, 0.2, 0.8, 6.0, M_DRYWALL)
 csg_box("Bed2", B2, 4.6, 0.3, -10.0, 1.6, 0.6, 2.0, M_WOOD_PROP)
 csg_box("Desk2", B2, 1.6, 0.4, -10.0, 1.0, 0.8, 1.6, M_WOOD_PROP)
 
+# Light smoke seeping into Bedroom 2
+smoke_particle("Bedroom2Smoke", B2, 3.25, 2.5, -8.0, vel=0.15, lifetime=3.5)
+
 # Bedroom 2 door (on South wall at Z = -5.0, centered at X = 2.5)
 door_static("Bedroom2Door", G, 2.5, 0, -5.0,
             is_hot=False, can_feel=True, open_angle=-90.0,
@@ -456,6 +545,9 @@ csg_box("Ceiling", CB, 7.25, 2.75, -8.0, 3.5, 0.1, 6.0, M_TILE_WHITE)
 csg_box("WallNorth", CB, 7.25, 1.4, -11.1, 3.5, 2.8, 0.2, M_TILE_WHITE)
 # South wall spans X = [5.5, 9.0] at Z = -4.9
 csg_box("WallSouth", CB, 7.25, 1.4, -4.9, 3.5, 2.8, 0.2, M_TILE_WHITE)
+
+# Light smoke seeping into Common Bathroom
+smoke_particle("CommonBathroomSmoke", CB, 7.25, 2.5, -8.0, vel=0.15, lifetime=3.5)
 # East wall spans Z = [-11.0, -5.0] at X = 9.1
 csg_box("WallEast", CB, 9.1, 1.4, -8.0, 0.2, 2.8, 6.0, M_TILE_WHITE)
 # Props in Common Bathroom
@@ -532,10 +624,21 @@ door_static("BalconyDoor", G, 3.0, 0, 1.0,
 # Sofa placed clear of the utility door (centered at X = -3.5, Z = -0.5)
 csg_box("Sofa", LV, -3.5, 0.4, -0.5, 2.0, 0.8, 0.8, M_FABRIC)
 csg_box("SofaBack", LV, -3.5, 0.95, -0.1, 2.0, 0.5, 0.2, M_FABRIC)
-csg_box("DiningTable", LV, 2.0, 0.4, -1.5, 1.6, 0.8, 1.0, M_WOOD_PROP)
+csg_box("DiningTable", LV, 2.0, 0.4, -1.5, 1.6, 0.8, 1.0, M_CHARRED)
 # TV Unit against the west wall, north of utility door (Z = -4.3)
 csg_box("TVUnit", LV, -4.0, 0.3, -4.3, 1.8, 0.6, 0.4, M_WOOD_PROP)
 csg_box("TVScreen", LV, -4.0, 0.95, -4.4, 1.2, 0.7, 0.1, M_CHARRED)
+
+# Fire Spread in Living Room (from Kitchen)
+smoke_particle("LivingRoomFire1", LV, 2.0, 0.8, -1.5, is_fire=True)
+smoke_particle("LivingRoomFire2", LV, 3.5, 0.5, -2.5, is_fire=True)
+omni_light("LivingRoomFireGlow", LV, 2.0, 1.2, -1.5, 4.0, color(1.0, 0.35, 0.0),
+           flicker=True, fl_min=2.5, fl_max=5.5, fl_speed=22.0, shadow=True, omni_range=7.0)
+
+# Dense Smoke in Living Room Ceiling
+smoke_particle("LivingRoomSmoke1", LV, 2.0, 2.5, -1.5, vel=0.3, lifetime=4.5)
+smoke_particle("LivingRoomSmoke2", LV, -2.0, 2.5, -1.5, vel=0.25, lifetime=5.0)
+smoke_particle("LivingRoomSmoke3", LV, 0.0, 2.5, 0.5, vel=0.25, lifetime=4.5)
 
 # Living Room Light
 omni_light("LivingLight", LV, -0.5, 2.5, -2.0, 1.6, color(1.0, 0.95, 0.88),
@@ -631,6 +734,9 @@ csg_box("WallWest", UT, -9.1, 1.4, -2.0, 0.2, 2.8, 6.0, M_DRYWALL)
 omni_light("UtilityLight", UT, -7.0, 2.5, -2.0, 0.8, color(0.9, 0.9, 1.0),
            flicker=True, fl_min=0.6, fl_max=1.0, fl_speed=5.0)
 
+# Light smoke seeping into Utility Room
+smoke_particle("UtilitySmoke", UT, -7.0, 2.5, -2.0, vel=0.15, lifetime=3.5)
+
 # East wall at X = -5.0 (separates from Living Room, has door cutout at Z = [-3.0, -2.0])
 # North of the door: spans Z = [-5.0, -3.0] (length 2.0)
 csg_box("WallEast_N", UT, -5.0, 1.4, -4.0, 0.2, 2.8, 2.0, M_DRYWALL)
@@ -663,6 +769,9 @@ csg_box("Floor", FY, 0.0, -0.05, 2.25, 3.0, 0.1, 2.5, M_WOOD_FLOOR)
 csg_box("Ceiling", FY, 0.0, 2.75, 2.25, 3.0, 0.1, 2.5, M_DRYWALL2)
 csg_box("WallWest", FY, -1.6, 1.4, 2.25, 0.2, 2.8, 2.5, M_DRYWALL2)
 csg_box("WallEast", FY, 1.6, 1.4, 2.25, 0.2, 2.8, 2.5, M_DRYWALL2)
+
+# Smoke filling the Foyer from Living Room
+smoke_particle("FoyerSmoke", FY, 0.0, 2.5, 2.25, vel=0.2, lifetime=4.0)
 
 # --- Balcony ---
 node("Balcony", "Node3D", G, [])
@@ -699,8 +808,17 @@ csg_box("CorridorCeiling", SC, 2.45, 2.85, 5.0, 25.1, 0.1, 3.0, M_DRYWALL)
 # North wall split around foyer opening (X = [-1.5, 1.5])
 # West segment: X = [-10.1, -1.5] (width 8.6)
 csg_box("WallNorth_W", SC, -5.8, 1.4, 3.4, 8.6, 2.8, 0.2, M_DRYWALL)
-# East segment: X = [1.5, 15.0] (width 13.5)
-csg_box("WallNorth_E", SC, 8.25, 1.4, 3.4, 13.5, 2.8, 0.2, M_DRYWALL)
+# East segments split around Unit 8B door (X = [10.5, 11.5]) and Unit 8C door (X = [13.5, 14.5]):
+# Segment 1 (foyer to 8B door): X = [1.5, 10.5] (width 9.0)
+csg_box("WallNorth_E1", SC, 6.0, 1.4, 3.4, 9.0, 2.8, 0.2, M_DRYWALL)
+# Above Unit 8B Door: X = [10.5, 11.5] (width 1.0, Y = [2.0, 2.8])
+csg_box("WallNorth_E_8B_Top", SC, 11.0, 2.4, 3.4, 1.0, 0.8, 0.2, M_DRYWALL)
+# Segment 2 (between 8B and 8C doors): X = [11.5, 13.5] (width 2.0)
+csg_box("WallNorth_E2", SC, 12.5, 1.4, 3.4, 2.0, 2.8, 0.2, M_DRYWALL)
+# Above Unit 8C Door: X = [13.5, 14.5] (width 1.0, Y = [2.0, 2.8])
+csg_box("WallNorth_E_8C_Top", SC, 14.0, 2.4, 3.4, 1.0, 0.8, 0.2, M_DRYWALL)
+# Segment 3 (8C door to lobby wall): X = [14.5, 15.0] (width 0.5)
+csg_box("WallNorth_E3", SC, 14.75, 1.4, 3.4, 0.5, 2.8, 0.2, M_DRYWALL)
 
 csg_box("WallSouth", SC, 2.45, 1.4, 6.6, 25.1, 2.8, 0.2, M_DRYWALL)
 
@@ -747,16 +865,107 @@ node("Mesh", "MeshInstance3D", f"{SC}/CorridorExtinguisher", [
     f'material_override = SubResource("{M_PHONE_BOX}")',
 ])
 
-# Decorative unit doors for other units along north corridor wall
-door_static("Unit8B_CorridorDoor", SC, 8.0, 0, 3.4,
-            is_door=False, is_locked=True, can_feel=False,
+# Unlocked, interactable door for the new neighbor unit (Unit 8B) at X = 11.0, leading into Unit 8B room
+door_static("Unit8B_CorridorDoor", SC, 11.0, 0, 3.4,
+            is_door=True, is_locked=False, can_feel=True,
             open_angle=90.0, door_mat=M_WOOD_DOOR,
-            prompt="Unit 8B — locked")
+            prompt="Unit 8B Door — [E] Open")
 
-door_static("Unit8C_CorridorDoor", SC, 11.0, 0, 3.4,
+# Locked decorative Unit 8C door shifted to X = 14.0
+door_static("Unit8C_CorridorDoor", SC, 14.0, 0, 3.4,
             is_door=False, is_locked=True, can_feel=False,
             open_angle=90.0, door_mat=M_WOOD_DOOR,
             prompt="Unit 8C — locked")
+
+# ── UNIT 8B (NEIGHBOUR UNIT) ─────────────────────────────────────────────────
+# Layout  (all Y referenced from floor Y=0):
+#   Living / Dining (open plan): X=[9.0,14.5], Z=[-2.5, 3.35] (5.5m × 5.85m)
+#   Bedroom:                     X=[9.0,12.0], Z=[-7.5,-2.5]  (3.0m × 5.0m)
+#   Bathroom:                    X=[12.0,14.5],Z=[-7.5,-2.5]  (2.5m × 5.0m)
+#   South wall = shared with corridor north wall (already built above)
+node("Unit8B", "Node3D", "Geometry", [])
+U8B = "Geometry/Unit8B"
+
+# ── Floors & Ceilings ──
+csg_box("LivingFloor",    U8B,  11.75, -0.05,  0.425, 5.5, 0.1, 5.85, M_WOOD_FLOOR)
+csg_box("LivingCeiling",  U8B,  11.75,  2.75,  0.425, 5.5, 0.1, 5.85, M_DRYWALL2)
+csg_box("BedFloor",       U8B,  10.5,  -0.05, -5.0,   3.0, 0.1, 5.0,  M_CARPET_BED2)
+csg_box("BedCeiling",     U8B,  10.5,   2.75, -5.0,   3.0, 0.1, 5.0,  M_DRYWALL2)
+csg_box("BathFloor",      U8B,  13.25, -0.05, -5.0,   2.5, 0.1, 5.0,  M_TILE_WHITE)
+csg_box("BathCeiling",    U8B,  13.25,  2.75, -5.0,   2.5, 0.1, 5.0,  M_DRYWALL2)
+
+# ── Outer Walls ──
+# North wall (Z = -7.5, exterior face)
+csg_box("WallNorth", U8B, 11.75, 1.4, -7.6, 5.5, 2.8, 0.2, M_DRYWALL2)
+# West wall (X = 9.0, exterior face) — spans Z=[-7.5, 3.35]
+csg_box("WallWest",  U8B,  8.9,  1.4, -2.05, 0.2, 2.8, 10.9, M_DRYWALL2)
+# East wall (X = 14.5, exterior face)
+csg_box("WallEast",  U8B, 14.6,  1.4, -2.05, 0.2, 2.8, 10.9, M_DRYWALL2)
+
+# ── Interior Partition: Living ↔ Bedroom / Bathroom (Z = -2.5) ──
+# West segment: X=[9.0,10.5] (no door here)
+csg_box("PartW",       U8B,  9.75, 1.4, -2.5, 1.5, 2.8, 0.2, M_DRYWALL2)
+# Lintel above bedroom door opening X=[10.5,11.5]
+csg_box("PartDoorTop", U8B, 11.0,  2.4, -2.5, 1.0, 0.8, 0.2, M_DRYWALL2)
+# East segment: X=[11.5,14.5]
+csg_box("PartE",       U8B, 13.0,  1.4, -2.5, 3.0, 2.8, 0.2, M_DRYWALL2)
+
+# Bedroom door — hinge at X=10.5, swings northward into bedroom (-90°)
+door_static("U8B_BedroomDoor", U8B, 11.0, 0, -2.5,
+            is_door=True, is_locked=False, can_feel=False,
+            open_angle=-90.0, door_mat=M_WOOD_DOOR, rot_y=0,
+            prompt="Bedroom — [E] Open")
+
+# ── Wall between Bedroom and Bathroom (X = 12.0) ──
+csg_box("BedBathWall", U8B, 12.0, 1.4, -5.0, 0.2, 2.8, 5.0, M_DRYWALL2)
+
+# ── Furniture: Living / Dining ──
+csg_box("U8B_Sofa",      U8B, 10.5,  0.4,  -0.5, 2.0, 0.8, 0.8, M_FABRIC)
+csg_box("U8B_SofaBack",  U8B, 10.5,  0.95, -0.1, 2.0, 0.5, 0.2, M_FABRIC)
+csg_box("U8B_Coffee",    U8B, 10.5,  0.3,   0.8, 1.0, 0.4, 0.5, M_WOOD_PROP)
+csg_box("U8B_TVUnit",    U8B,  9.7,  0.3,  -2.0, 1.4, 0.6, 0.4, M_WOOD_PROP)
+csg_box("U8B_TVScreen",  U8B,  9.7,  0.9,  -2.1, 1.0, 0.65,0.1, M_CONCRETE_DARK)
+csg_box("U8B_DinTable",  U8B, 13.5,  0.4,   1.0, 1.4, 0.8, 0.8, M_WOOD_PROP)
+csg_box("U8B_DinChair1", U8B, 13.0,  0.4,   0.3, 0.5, 0.8, 0.5, M_WOOD_PROP)
+csg_box("U8B_DinChair2", U8B, 14.0,  0.4,   0.3, 0.5, 0.8, 0.5, M_WOOD_PROP)
+# Kitchen counter along east wall
+csg_box("U8B_Counter",   U8B, 14.1,  0.9,  -1.0, 0.8, 0.9, 3.0, M_TILE_WHITE)
+csg_box("U8B_CounterTop",U8B, 14.1,  0.95, -1.0, 0.9, 0.05,3.2, M_MARBLE)
+
+# ── Furniture: Bedroom ──
+csg_box("U8B_Bed",      U8B, 10.5,  0.3, -6.0, 2.2, 0.6, 1.8, M_FABRIC)
+csg_box("U8B_BedPillow",U8B, 10.5,  0.65,-5.25,1.6, 0.15,0.4, M_DRYWALL2)
+csg_box("U8B_Bedside",  U8B,  9.4,  0.4, -5.3, 0.5, 0.8, 0.5, M_WOOD_PROP)
+csg_box("U8B_Wardrobe", U8B, 11.6,  1.2, -7.2, 0.7, 2.4, 1.2, M_WOOD_DOOR)
+csg_box("U8B_Desk",     U8B,  9.8,  0.4, -3.2, 1.2, 0.8, 0.6, M_WOOD_PROP)
+
+# ── Furniture: Bathroom ──
+csg_box("U8B_Toilet",   U8B, 12.5,  0.4, -7.0, 0.5, 0.8, 0.7, M_TILE_WHITE)
+csg_box("U8B_Sink",     U8B, 13.5,  0.9, -7.1, 0.6, 0.9, 0.4, M_TILE_WHITE)
+csg_box("U8B_Bathtub",  U8B, 14.0,  0.3, -5.5, 0.8, 0.6, 1.8, M_TILE_WHITE)
+
+# ── Lights ──
+omni_light("U8B_LivingLight",  U8B, 11.75, 2.5,  0.45,  1.6, color(1.0, 0.95, 0.88),
+           flicker=True, fl_min=1.1, fl_max=1.5, fl_speed=3.0)
+omni_light("U8B_BedLight",     U8B, 10.5,  2.5, -5.0,   1.0, color(0.9, 0.88, 1.0))
+omni_light("U8B_BathLight",    U8B, 13.25, 2.5, -5.0,   0.8, color(0.95, 0.95, 1.0))
+
+# ── Exit sign inside Unit 8B pointing toward the door ──
+csg_box("U8B_ExitSign", U8B, 11.0, 2.5, -2.1, 0.6, 0.3, 0.05, M_EXIT_SIGN, collision=False)
+
+# ── Smoke Area for Unit 8B (light seepage from corridor) ──
+node("U8B_SmokeArea", "Area3D", U8B, [
+    f'transform = {tf(11.75, 1.25, 0.45)}',
+    'collision_mask = 1',
+    f'script = ExtResource("3_smoke_area")',
+])
+shp_u8b_smoke = add_sub("Shp_U8B_Smoke", "BoxShape3D", ['size = Vector3(5.5, 1.5, 5.8)'])
+node("CollisionShape3D", "CollisionShape3D", f"{U8B}/U8B_SmokeArea", [
+    f'shape = SubResource("{shp_u8b_smoke}")',
+])
+# Light ceiling smoke seeping under the door from the corridor
+smoke_particle("U8B_Smoke1", U8B, 11.0, 2.4, 1.5, vel=0.1, lifetime=5.0)
+smoke_particle("U8B_Smoke2", U8B, 11.75, 2.4, -0.5, vel=0.08, lifetime=6.0)
 
 # ── ELEVATOR LOBBY ───────────────────────────────────────────────────────────
 node("ElevatorLobby", "Node3D", "Geometry", [])
@@ -851,14 +1060,14 @@ csg_box("ShaftWallEast_Above", SW, -10.1, 2.5, 0.5, 0.3, 1.0, 10.6, M_CONCRETE)
 csg_box("ShaftWallEast_North", SW, -10.1, 1.0, -0.15, 0.3, 2.0, 9.3, M_CONCRETE)
 csg_box("ShaftWallEast_South", SW, -10.1, 1.0, 5.65, 0.3, 2.0, 0.3, M_CONCRETE)
 
-# Fire door (Level 8 entry) - aligned to East wall cutout at Z = 5.0, X = -9.0
-door_static("FireDoor_L8", SW, -9.0, 0, 5.0,
+# Fire door (Level 8 entry) - aligned to East wall cutout at Z = 5.0, X = -10.1
+door_static("FireDoor_L8", SW, -10.1, 0, 5.0,
             is_hot=False, can_feel=True, open_angle=90.0,
             door_mat=M_STEEL_DOOR, rot_y=90,
             prompt="Fire Exit — Feel door before opening [F]")
 
-# Exit sign above fire door
-csg_box("ExitSignFireDoor", SW, -9.0, 2.5, 5.0, 0.6, 0.3, 0.05, M_EXIT_SIGN, collision=False)
+# Exit sign above fire door - parallel to Z axis aligned to East wall at X = -10.1
+csg_box("ExitSignFireDoor", SW, -10.1, 2.5, 5.0, 0.05, 0.3, 0.6, M_EXIT_SIGN, collision=False)
 
 # Shaft ceiling (roof) and bottom floor
 csg_box("ShaftRoof", SW, shaft_cx, 2.75, 0.5, 4.8, 0.1, 10.6, M_CONCRETE)

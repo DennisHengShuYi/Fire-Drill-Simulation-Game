@@ -1,0 +1,121 @@
+--- INSPECTING DOORS IN INSTANTIATED LEVEL ---
+Node: BedroomDoor ()
+  Rotation Y Degrees: 90.0
+  Transform: [X: (0.0, 0.0, -1.0), Y: (0.0, 1.0, 0.0), Z: (1.0, 0.0, 0.0), O: (-2.0, 0.0, -5.5)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: Bedroom2Door ()
+  Rotation Y Degrees: 180.0
+  Transform: [X: (-1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, -1.0), O: (3.0, 0.0, -5.0)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: BathroomDoor ()
+  Rotation Y Degrees: 90.0
+  Transform: [X: (0.0, 0.0, -1.0), Y: (0.0, 1.0, 0.0), Z: (1.0, 0.0, 0.0), O: (5.5, 0.0, -5.5)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: EnsuiteDoor ()
+  Rotation Y Degrees: 90.0
+  Transform: [X: (0.0, 0.0, -1.0), Y: (0.0, 1.0, 0.0), Z: (1.0, 0.0, 0.0), O: (-6.0, 0.0, -5.5)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: BalconyDoor ()
+  Rotation Y Degrees: 0.0
+  Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (2.5, 0.0, 1.0)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: UnitFrontDoor ()
+  Rotation Y Degrees: 0.0
+  Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (-0.5, 0.0, 1.0)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: KitchenDoor ()
+  Rotation Y Degrees: 90.0
+  Transform: [X: (0.0, 0.0, -1.0), Y: (0.0, 1.0, 0.0), Z: (1.0, 0.0, 0.0), O: (4.0, 0.0, -2.0)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: UtilityDoor ()
+  Rotation Y Degrees: 90.0
+  Transform: [X: (0.0, 0.0, -1.0), Y: (0.0, 1.0, 0.0), Z: (1.0, 0.0, 0.0), O: (-5.0, 0.0, -2.0)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: Unit8B_CorridorDoor ()
+  Rotation Y Degrees: 0.0
+  Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (10.5, 0.0, 3.4)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: Unit8C_CorridorDoor ()
+  Rotation Y Degrees: 0.0
+  Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (13.5, 0.0, 3.4)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: U8B_BedroomDoor ()
+  Rotation Y Degrees: 0.0
+  Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (10.5, 0.0, -2.5)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: LiftA ()
+  Rotation Y Degrees: 0.0
+  Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (16.0, 0.0, 7.5)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.6, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.6, 1.0, 0.0)]
+----------------------------------------
+Node: LiftB ()
+  Rotation Y Degrees: 0.0
+  Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (18.8, 0.0, 7.5)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.6, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.6, 1.0, 0.0)]
+----------------------------------------
+Node: FireDoor_L8 ()
+  Rotation Y Degrees: 90.0
+  Transform: [X: (0.0, 0.0, -1.0), Y: (0.0, 1.0, 0.0), Z: (1.0, 0.0, 0.0), O: (-10.1, 0.0, 5.5)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------
+Node: GroundExitDoor ()
+  Rotation Y Degrees: 0.0
+  Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (-13.0, -22.4, 5.9)]
+  Child Node: CollisionShape3D (CollisionShape3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+  Child Node: Mesh (MeshInstance3D)
+    Transform: [X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.5, 1.0, 0.0)]
+----------------------------------------

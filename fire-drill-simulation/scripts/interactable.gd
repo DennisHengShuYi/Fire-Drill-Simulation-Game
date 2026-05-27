@@ -55,7 +55,9 @@ func interact(player: CharacterBody3D):
 		toggle_door(player)
 		if door_opened:
 			GameManager.used_stairs = true
-			player.teleport_to_outside()
+			player.is_outside = true
+			player.in_smoke_zone = false
+			player.show_log_message("You push through the exit door to the outside! Walk to the assembly point!")
 	elif is_door:
 		toggle_door(player)
 		if name == "StairsExitDoor" and door_opened:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=82 format=3 uid="uid://condo_firedrill_l8"]
+[gd_scene load_steps=99 format=3 uid="uid://condo_firedrill_l8"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/interactable.gd" id="2_interactable"]
 [ext_resource type="Script" path="res://scripts/smoke_area.gd" id="3_smoke_area"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://scripts/synth_audio.gd" id="5_synth_audio"]
 [ext_resource type="Script" path="res://scripts/synth_audio_3d.gd" id="6_synth_audio_3d"]
 [ext_resource type="Script" path="res://scripts/elevator.gd" id="7_elevator"]
+[ext_resource type="Script" path="res://scripts/fire_area.gd" id="8_fire_area"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_CarpetMaster"]
 albedo_color = Color(0.25, 0.18, 0.12, 1)
@@ -153,6 +154,43 @@ transparency = 1
 albedo_color = Color(0.5, 0.5, 0.5, 1)
 roughness = 0.6
 
+[sub_resource type="StandardMaterial3D" id="Mat_FireParticle"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 1)
+billboard_mode = 1
+billboard_keep_scale = true
+
+[sub_resource type="QuadMesh" id="Mesh_FireParticle"]
+material = SubResource("Mat_FireParticle")
+size = Vector2(0.6, 0.6)
+
+[sub_resource type="Gradient" id="Grad_Fire"]
+offsets = PackedFloat32Array(0, 0.15, 0.55, 1)
+colors = PackedColorArray(1, 1, 0.3, 1, 1, 0.45, 0, 1, 0.8, 0.08, 0, 0.8, 0.15, 0.15, 0.15, 0)
+
+[sub_resource type="StandardMaterial3D" id="Mat_SmokeParticle"]
+transparency = 1
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 1)
+billboard_mode = 1
+billboard_keep_scale = true
+
+[sub_resource type="QuadMesh" id="Mesh_SmokeParticle"]
+material = SubResource("Mat_SmokeParticle")
+size = Vector2(1.0, 1.0)
+
+[sub_resource type="Gradient" id="Grad_Smoke"]
+offsets = PackedFloat32Array(0, 0.3, 0.8, 1)
+colors = PackedColorArray(0.35, 0.35, 0.35, 0.3, 0.25, 0.25, 0.25, 0.5, 0.15, 0.15, 0.15, 0.3, 0.1, 0.1, 0.1, 0)
+
+[sub_resource type="Curve" id="Curve_FireScale"]
+_data = [Vector2(0, 1.2), 0.0, -1.0, 0, 0, Vector2(1, 0.2), -1.0, 0.0, 0, 0]
+
+[sub_resource type="Curve" id="Curve_SmokeScale"]
+_data = [Vector2(0, 0.4), 0.0, 1.8, 0, 0, Vector2(1, 2.2), 1.8, 0.0, 0, 0]
+
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.01, 0.01, 0.03, 1)
 sky_horizon_color = Color(0.02, 0.02, 0.05, 1)
@@ -234,6 +272,12 @@ size = Vector3(1.0, 2.0, 0.1)
 [sub_resource type="BoxMesh" id="Mesh_BalconyDoor"]
 size = Vector3(1.0, 2.0, 0.1)
 
+[sub_resource type="BoxShape3D" id="Shp_LivingRoomFire1_Hazard"]
+size = Vector3(1.2, 1.2, 1.2)
+
+[sub_resource type="BoxShape3D" id="Shp_LivingRoomFire2_Hazard"]
+size = Vector3(1.2, 1.2, 1.2)
+
 [sub_resource type="BoxShape3D" id="Shp_UnitFrontDoor"]
 size = Vector3(1.0, 2.0, 0.1)
 
@@ -252,6 +296,15 @@ size = Vector3(1.0, 2.0, 0.1)
 [sub_resource type="BoxMesh" id="Mesh_UtilityDoor"]
 size = Vector3(1.0, 2.0, 0.1)
 
+[sub_resource type="BoxShape3D" id="Shp_FireParticle1_Hazard"]
+size = Vector3(1.2, 1.2, 1.2)
+
+[sub_resource type="BoxShape3D" id="Shp_FireParticle2_Hazard"]
+size = Vector3(1.2, 1.2, 1.2)
+
+[sub_resource type="BoxShape3D" id="Shp_FireParticle3_Hazard"]
+size = Vector3(1.2, 1.2, 1.2)
+
 [sub_resource type="BoxMesh" id="Shp_BalconySign"]
 size = Vector3(1.5, 0.4, 0.05)
 
@@ -269,6 +322,15 @@ size = Vector3(1.0, 2.0, 0.1)
 
 [sub_resource type="BoxMesh" id="Mesh_Unit8C_CorridorDoor"]
 size = Vector3(1.0, 2.0, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shp_U8B_BedroomDoor"]
+size = Vector3(1.0, 2.0, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_U8B_BedroomDoor"]
+size = Vector3(1.0, 2.0, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shp_U8B_Smoke"]
+size = Vector3(5.5, 1.5, 5.8)
 
 [sub_resource type="BoxShape3D" id="Shp_LiftA"]
 size = Vector3(1.2, 2.0, 0.1)
@@ -387,6 +449,27 @@ use_collision = true
 size = Vector3(3.0, 2.8, 0.2)
 material = SubResource("Mat_Drywall2")
 
+[node name="HallwaySmoke" type="CPUParticles3D" parent="Geometry/Unit8A/Hallway"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 2.5, -8.0)
+amount = 60
+lifetime = 4.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.08000000000000002
+initial_velocity_max = 0.2
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
+
 [node name="Bed" type="CSGBox3D" parent="Geometry/Unit8A/MasterBedroom"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.6, 0.3, -9.4)
 use_collision = true
@@ -409,6 +492,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.8, 0.4, -8.5)
 use_collision = true
 size = Vector3(0.6, 0.8, 0.6)
 material = SubResource("Mat_Fabric")
+
+[node name="MasterBedroomSmoke" type="CPUParticles3D" parent="Geometry/Unit8A/MasterBedroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 2.5, -8.0)
+amount = 60
+lifetime = 3.5
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.06
+initial_velocity_max = 0.15
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
 [node name="BedroomDoor" type="StaticBody3D" parent="Geometry/Unit8A"]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -2.0, 0, -5.5)
@@ -510,6 +614,27 @@ use_collision = true
 size = Vector3(1.0, 0.8, 1.6)
 material = SubResource("Mat_WoodProp")
 
+[node name="Bedroom2Smoke" type="CPUParticles3D" parent="Geometry/Unit8A/Bedroom2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.25, 2.5, -8.0)
+amount = 60
+lifetime = 3.5
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.06
+initial_velocity_max = 0.15
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
+
 [node name="Bedroom2Door" type="StaticBody3D" parent="Geometry/Unit8A"]
 transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, -0.0, 0, -1.0, 3.0, 0, -5.0)
 collision_layer = 2
@@ -561,6 +686,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.25, 1.4, -4.9)
 use_collision = true
 size = Vector3(3.5, 2.8, 0.2)
 material = SubResource("Mat_TileWhite")
+
+[node name="CommonBathroomSmoke" type="CPUParticles3D" parent="Geometry/Unit8A/CommonBathroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.25, 2.5, -8.0)
+amount = 60
+lifetime = 3.5
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.06
+initial_velocity_max = 0.15
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
 [node name="WallEast" type="CSGBox3D" parent="Geometry/Unit8A/CommonBathroom"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.1, 1.4, -8.0)
@@ -785,7 +931,7 @@ material = SubResource("Mat_Fabric")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 0.4, -1.5)
 use_collision = true
 size = Vector3(1.6, 0.8, 1.0)
-material = SubResource("Mat_WoodProp")
+material = SubResource("Mat_Charred")
 
 [node name="TVUnit" type="CSGBox3D" parent="Geometry/Unit8A/LivingDining"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.0, 0.3, -4.3)
@@ -798,6 +944,138 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.0, 0.95, -4.4)
 use_collision = true
 size = Vector3(1.2, 0.7, 0.1)
 material = SubResource("Mat_Charred")
+
+[node name="LivingRoomFire1" type="CPUParticles3D" parent="Geometry/Unit8A/LivingDining"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 0.8, -1.5)
+amount = 50
+lifetime = 3.0
+mesh = SubResource("Mesh_FireParticle")
+emission_shape = 1
+emission_sphere_radius = 0.4
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 3.0, 0)
+initial_velocity_min = 0.4
+initial_velocity_max = 0.8
+angular_velocity_min = -90.0
+angular_velocity_max = 90.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.4
+scale_amount_curve = SubResource("Curve_FireScale")
+color_ramp = SubResource("Grad_Fire")
+
+[node name="LivingRoomFire1_Hazard" type="Area3D" parent="Geometry/Unit8A/LivingDining"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 1.4, -1.5)
+collision_mask = 1
+script = ExtResource("8_fire_area")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Unit8A/LivingDining/LivingRoomFire1_Hazard"]
+shape = SubResource("Shp_LivingRoomFire1_Hazard")
+
+[node name="LivingRoomFire2" type="CPUParticles3D" parent="Geometry/Unit8A/LivingDining"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0.5, -2.5)
+amount = 50
+lifetime = 3.0
+mesh = SubResource("Mesh_FireParticle")
+emission_shape = 1
+emission_sphere_radius = 0.4
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 3.0, 0)
+initial_velocity_min = 0.4
+initial_velocity_max = 0.8
+angular_velocity_min = -90.0
+angular_velocity_max = 90.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.4
+scale_amount_curve = SubResource("Curve_FireScale")
+color_ramp = SubResource("Grad_Fire")
+
+[node name="LivingRoomFire2_Hazard" type="Area3D" parent="Geometry/Unit8A/LivingDining"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 1.1, -2.5)
+collision_mask = 1
+script = ExtResource("8_fire_area")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Unit8A/LivingDining/LivingRoomFire2_Hazard"]
+shape = SubResource("Shp_LivingRoomFire2_Hazard")
+
+[node name="LivingRoomFireGlow" type="OmniLight3D" parent="Geometry/Unit8A/LivingDining"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 1.2, -1.5)
+light_color = Color(1.0, 0.35, 0.0, 1)
+light_energy = 4.0
+omni_range = 7.0
+shadow_enabled = true
+script = ExtResource("4_light_flicker")
+min_energy = 2.5
+max_energy = 5.5
+flicker_speed = 22.0
+
+[node name="LivingRoomSmoke1" type="CPUParticles3D" parent="Geometry/Unit8A/LivingDining"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 2.5, -1.5)
+amount = 60
+lifetime = 4.5
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.12
+initial_velocity_max = 0.3
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
+
+[node name="LivingRoomSmoke2" type="CPUParticles3D" parent="Geometry/Unit8A/LivingDining"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.0, 2.5, -1.5)
+amount = 60
+lifetime = 5.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.1
+initial_velocity_max = 0.25
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
+
+[node name="LivingRoomSmoke3" type="CPUParticles3D" parent="Geometry/Unit8A/LivingDining"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 2.5, 0.5)
+amount = 60
+lifetime = 4.5
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.1
+initial_velocity_max = 0.25
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
 [node name="LivingLight" type="OmniLight3D" parent="Geometry/Unit8A/LivingDining"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 2.5, -2.0)
@@ -946,30 +1224,134 @@ min_energy = 2.0
 max_energy = 5.0
 flicker_speed = 18.0
 
-[node name="FireParticle1" type="CSGBox3D" parent="Geometry/Unit8A/Kitchen"]
+[node name="FireParticle1" type="CPUParticles3D" parent="Geometry/Unit8A/Kitchen"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0.5, -2.0)
-size = Vector3(0.6, 0.8, 0.6)
-material = SubResource("Mat_WarnSign")
+amount = 50
+lifetime = 3.0
+mesh = SubResource("Mesh_FireParticle")
+emission_shape = 1
+emission_sphere_radius = 0.4
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 3.0, 0)
+initial_velocity_min = 0.4
+initial_velocity_max = 0.8
+angular_velocity_min = -90.0
+angular_velocity_max = 90.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.4
+scale_amount_curve = SubResource("Curve_FireScale")
+color_ramp = SubResource("Grad_Fire")
 
-[node name="FireParticle2" type="CSGBox3D" parent="Geometry/Unit8A/Kitchen"]
+[node name="FireParticle1_Hazard" type="Area3D" parent="Geometry/Unit8A/Kitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.1, -2.0)
+collision_mask = 1
+script = ExtResource("8_fire_area")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Unit8A/Kitchen/FireParticle1_Hazard"]
+shape = SubResource("Shp_FireParticle1_Hazard")
+
+[node name="FireParticle2" type="CPUParticles3D" parent="Geometry/Unit8A/Kitchen"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0.5, -2.5)
-size = Vector3(0.6, 0.8, 0.6)
-material = SubResource("Mat_WarnSign")
+amount = 50
+lifetime = 3.0
+mesh = SubResource("Mesh_FireParticle")
+emission_shape = 1
+emission_sphere_radius = 0.4
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 3.0, 0)
+initial_velocity_min = 0.4
+initial_velocity_max = 0.8
+angular_velocity_min = -90.0
+angular_velocity_max = 90.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.4
+scale_amount_curve = SubResource("Curve_FireScale")
+color_ramp = SubResource("Grad_Fire")
 
-[node name="FireParticle3" type="CSGBox3D" parent="Geometry/Unit8A/Kitchen"]
+[node name="FireParticle2_Hazard" type="Area3D" parent="Geometry/Unit8A/Kitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 1.1, -2.5)
+collision_mask = 1
+script = ExtResource("8_fire_area")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Unit8A/Kitchen/FireParticle2_Hazard"]
+shape = SubResource("Shp_FireParticle2_Hazard")
+
+[node name="FireParticle3" type="CPUParticles3D" parent="Geometry/Unit8A/Kitchen"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0.5, -1.5)
-size = Vector3(0.6, 0.8, 0.6)
-material = SubResource("Mat_WarnSign")
+amount = 50
+lifetime = 3.0
+mesh = SubResource("Mesh_FireParticle")
+emission_shape = 1
+emission_sphere_radius = 0.4
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 3.0, 0)
+initial_velocity_min = 0.4
+initial_velocity_max = 0.8
+angular_velocity_min = -90.0
+angular_velocity_max = 90.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.4
+scale_amount_curve = SubResource("Curve_FireScale")
+color_ramp = SubResource("Grad_Fire")
 
-[node name="SmokeParticle1" type="CSGBox3D" parent="Geometry/Unit8A/Kitchen"]
+[node name="FireParticle3_Hazard" type="Area3D" parent="Geometry/Unit8A/Kitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 1.1, -1.5)
+collision_mask = 1
+script = ExtResource("8_fire_area")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Unit8A/Kitchen/FireParticle3_Hazard"]
+shape = SubResource("Shp_FireParticle3_Hazard")
+
+[node name="SmokeParticle1" type="CPUParticles3D" parent="Geometry/Unit8A/Kitchen"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 2.5, -2.0)
-size = Vector3(0.8, 0.8, 0.8)
-material = SubResource("Mat_Smoke")
+amount = 60
+lifetime = 3.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.2
+initial_velocity_max = 0.5
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
-[node name="SmokeParticle2" type="CSGBox3D" parent="Geometry/Unit8A/Kitchen"]
+[node name="SmokeParticle2" type="CPUParticles3D" parent="Geometry/Unit8A/Kitchen"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 2.5, -2.5)
-size = Vector3(0.8, 0.8, 0.8)
-material = SubResource("Mat_Smoke")
+amount = 60
+lifetime = 3.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.2
+initial_velocity_max = 0.5
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
 [node name="FireCrackle" type="AudioStreamPlayer3D" parent="Geometry/Unit8A/Kitchen"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 1.0, -2.0)
@@ -1012,6 +1394,27 @@ script = ExtResource("4_light_flicker")
 min_energy = 0.6
 max_energy = 1.0
 flicker_speed = 5.0
+
+[node name="UtilitySmoke" type="CPUParticles3D" parent="Geometry/Unit8A/Utility"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.0, 2.5, -2.0)
+amount = 60
+lifetime = 3.5
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.06
+initial_velocity_max = 0.15
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
 [node name="WallEast_N" type="CSGBox3D" parent="Geometry/Unit8A/Utility"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.0, 1.4, -4.0)
@@ -1115,6 +1518,27 @@ use_collision = true
 size = Vector3(0.2, 2.8, 2.5)
 material = SubResource("Mat_Drywall2")
 
+[node name="FoyerSmoke" type="CPUParticles3D" parent="Geometry/Unit8A/Foyer"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 2.5, 2.25)
+amount = 60
+lifetime = 4.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.08000000000000002
+initial_velocity_max = 0.2
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
+
 [node name="Balcony" type="Node3D" parent="Geometry/Unit8A"]
 
 [node name="Floor" type="CSGBox3D" parent="Geometry/Unit8A/Balcony"]
@@ -1166,10 +1590,34 @@ use_collision = true
 size = Vector3(8.6, 2.8, 0.2)
 material = SubResource("Mat_Drywall")
 
-[node name="WallNorth_E" type="CSGBox3D" parent="Geometry/SharedCorridor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25, 1.4, 3.4)
+[node name="WallNorth_E1" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0, 1.4, 3.4)
 use_collision = true
-size = Vector3(13.5, 2.8, 0.2)
+size = Vector3(9.0, 2.8, 0.2)
+material = SubResource("Mat_Drywall")
+
+[node name="WallNorth_E_8B_Top" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.0, 2.4, 3.4)
+use_collision = true
+size = Vector3(1.0, 0.8, 0.2)
+material = SubResource("Mat_Drywall")
+
+[node name="WallNorth_E2" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 1.4, 3.4)
+use_collision = true
+size = Vector3(2.0, 2.8, 0.2)
+material = SubResource("Mat_Drywall")
+
+[node name="WallNorth_E_8C_Top" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.0, 2.4, 3.4)
+use_collision = true
+size = Vector3(1.0, 0.8, 0.2)
+material = SubResource("Mat_Drywall")
+
+[node name="WallNorth_E3" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.75, 1.4, 3.4)
+use_collision = true
+size = Vector3(0.5, 2.8, 0.2)
 material = SubResource("Mat_Drywall")
 
 [node name="WallSouth" type="CSGBox3D" parent="Geometry/SharedCorridor"]
@@ -1186,20 +1634,68 @@ script = ExtResource("3_smoke_area")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/SharedCorridor/SmokeArea"]
 shape = SubResource("Shp_SmokeArea")
 
-[node name="CorridorSmoke1" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+[node name="CorridorSmoke1" type="CPUParticles3D" parent="Geometry/SharedCorridor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1.5, 5.0)
-size = Vector3(0.8, 0.8, 0.8)
-material = SubResource("Mat_Smoke")
+amount = 60
+lifetime = 4.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 60
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.1
+initial_velocity_max = 0.25
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
-[node name="CorridorSmoke2" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+[node name="CorridorSmoke2" type="CPUParticles3D" parent="Geometry/SharedCorridor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.5, 5.0)
-size = Vector3(0.8, 0.8, 0.8)
-material = SubResource("Mat_Smoke")
+amount = 60
+lifetime = 4.5
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 55
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.08000000000000002
+initial_velocity_max = 0.2
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
-[node name="CorridorSmoke3" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+[node name="CorridorSmoke3" type="CPUParticles3D" parent="Geometry/SharedCorridor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1.5, 5.0)
-size = Vector3(0.8, 0.8, 0.8)
-material = SubResource("Mat_Smoke")
+amount = 60
+lifetime = 4.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 50
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.08000000000000002
+initial_velocity_max = 0.2
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
 [node name="CorrLight_1" type="OmniLight3D" parent="Geometry/SharedCorridor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 2.7, 5.0)
@@ -1265,12 +1761,12 @@ mesh = SubResource("Shp_Extinguish")
 material_override = SubResource("Mat_PhoneBox")
 
 [node name="Unit8B_CorridorDoor" type="StaticBody3D" parent="Geometry/SharedCorridor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, 3.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0, 3.4)
 collision_layer = 2
 script = ExtResource("2_interactable")
-prompt_message = "Unit 8B — locked"
-can_feel = false
-is_locked_door = true
+prompt_message = "Unit 8B Door — [E] Open"
+is_door = true
+open_angle = 90.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/SharedCorridor/Unit8B_CorridorDoor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.0, 0)
@@ -1282,7 +1778,7 @@ mesh = SubResource("Mesh_Unit8B_CorridorDoor")
 material_override = SubResource("Mat_WoodDoor")
 
 [node name="Unit8C_CorridorDoor" type="StaticBody3D" parent="Geometry/SharedCorridor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0, 3.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 0, 3.4)
 collision_layer = 2
 script = ExtResource("2_interactable")
 prompt_message = "Unit 8C — locked"
@@ -1297,6 +1793,289 @@ shape = SubResource("Shp_Unit8C_CorridorDoor")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.0, 0)
 mesh = SubResource("Mesh_Unit8C_CorridorDoor")
 material_override = SubResource("Mat_WoodDoor")
+
+[node name="Unit8B" type="Node3D" parent="Geometry"]
+
+[node name="LivingFloor" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.75, -0.05, 0.425)
+use_collision = true
+size = Vector3(5.5, 0.1, 5.85)
+material = SubResource("Mat_WoodFloor")
+
+[node name="LivingCeiling" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.75, 2.75, 0.425)
+use_collision = true
+size = Vector3(5.5, 0.1, 5.85)
+material = SubResource("Mat_Drywall2")
+
+[node name="BedFloor" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, -0.05, -5.0)
+use_collision = true
+size = Vector3(3.0, 0.1, 5.0)
+material = SubResource("Mat_CarpetBed2")
+
+[node name="BedCeiling" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 2.75, -5.0)
+use_collision = true
+size = Vector3(3.0, 0.1, 5.0)
+material = SubResource("Mat_Drywall2")
+
+[node name="BathFloor" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.25, -0.05, -5.0)
+use_collision = true
+size = Vector3(2.5, 0.1, 5.0)
+material = SubResource("Mat_TileWhite")
+
+[node name="BathCeiling" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.25, 2.75, -5.0)
+use_collision = true
+size = Vector3(2.5, 0.1, 5.0)
+material = SubResource("Mat_Drywall2")
+
+[node name="WallNorth" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.75, 1.4, -7.6)
+use_collision = true
+size = Vector3(5.5, 2.8, 0.2)
+material = SubResource("Mat_Drywall2")
+
+[node name="WallWest" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.9, 1.4, -2.05)
+use_collision = true
+size = Vector3(0.2, 2.8, 10.9)
+material = SubResource("Mat_Drywall2")
+
+[node name="WallEast" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.6, 1.4, -2.05)
+use_collision = true
+size = Vector3(0.2, 2.8, 10.9)
+material = SubResource("Mat_Drywall2")
+
+[node name="PartW" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.75, 1.4, -2.5)
+use_collision = true
+size = Vector3(1.5, 2.8, 0.2)
+material = SubResource("Mat_Drywall2")
+
+[node name="PartDoorTop" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.0, 2.4, -2.5)
+use_collision = true
+size = Vector3(1.0, 0.8, 0.2)
+material = SubResource("Mat_Drywall2")
+
+[node name="PartE" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.0, 1.4, -2.5)
+use_collision = true
+size = Vector3(3.0, 2.8, 0.2)
+material = SubResource("Mat_Drywall2")
+
+[node name="U8B_BedroomDoor" type="StaticBody3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0, -2.5)
+collision_layer = 2
+script = ExtResource("2_interactable")
+prompt_message = "Bedroom — [E] Open"
+is_door = true
+can_feel = false
+open_angle = -90.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Unit8B/U8B_BedroomDoor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.0, 0)
+shape = SubResource("Shp_U8B_BedroomDoor")
+
+[node name="Mesh" type="MeshInstance3D" parent="Geometry/Unit8B/U8B_BedroomDoor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.0, 0)
+mesh = SubResource("Mesh_U8B_BedroomDoor")
+material_override = SubResource("Mat_WoodDoor")
+
+[node name="BedBathWall" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.0, 1.4, -5.0)
+use_collision = true
+size = Vector3(0.2, 2.8, 5.0)
+material = SubResource("Mat_Drywall2")
+
+[node name="U8B_Sofa" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0.4, -0.5)
+use_collision = true
+size = Vector3(2.0, 0.8, 0.8)
+material = SubResource("Mat_Fabric")
+
+[node name="U8B_SofaBack" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0.95, -0.1)
+use_collision = true
+size = Vector3(2.0, 0.5, 0.2)
+material = SubResource("Mat_Fabric")
+
+[node name="U8B_Coffee" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0.3, 0.8)
+use_collision = true
+size = Vector3(1.0, 0.4, 0.5)
+material = SubResource("Mat_WoodProp")
+
+[node name="U8B_TVUnit" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.7, 0.3, -2.0)
+use_collision = true
+size = Vector3(1.4, 0.6, 0.4)
+material = SubResource("Mat_WoodProp")
+
+[node name="U8B_TVScreen" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.7, 0.9, -2.1)
+use_collision = true
+size = Vector3(1.0, 0.65, 0.1)
+material = SubResource("Mat_ConcreteDark")
+
+[node name="U8B_DinTable" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 0.4, 1.0)
+use_collision = true
+size = Vector3(1.4, 0.8, 0.8)
+material = SubResource("Mat_WoodProp")
+
+[node name="U8B_DinChair1" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.0, 0.4, 0.3)
+use_collision = true
+size = Vector3(0.5, 0.8, 0.5)
+material = SubResource("Mat_WoodProp")
+
+[node name="U8B_DinChair2" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.0, 0.4, 0.3)
+use_collision = true
+size = Vector3(0.5, 0.8, 0.5)
+material = SubResource("Mat_WoodProp")
+
+[node name="U8B_Counter" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.1, 0.9, -1.0)
+use_collision = true
+size = Vector3(0.8, 0.9, 3.0)
+material = SubResource("Mat_TileWhite")
+
+[node name="U8B_CounterTop" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.1, 0.95, -1.0)
+use_collision = true
+size = Vector3(0.9, 0.05, 3.2)
+material = SubResource("Mat_Marble")
+
+[node name="U8B_Bed" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0.3, -6.0)
+use_collision = true
+size = Vector3(2.2, 0.6, 1.8)
+material = SubResource("Mat_Fabric")
+
+[node name="U8B_BedPillow" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0.65, -5.25)
+use_collision = true
+size = Vector3(1.6, 0.15, 0.4)
+material = SubResource("Mat_Drywall2")
+
+[node name="U8B_Bedside" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.4, 0.4, -5.3)
+use_collision = true
+size = Vector3(0.5, 0.8, 0.5)
+material = SubResource("Mat_WoodProp")
+
+[node name="U8B_Wardrobe" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.6, 1.2, -7.2)
+use_collision = true
+size = Vector3(0.7, 2.4, 1.2)
+material = SubResource("Mat_WoodDoor")
+
+[node name="U8B_Desk" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.8, 0.4, -3.2)
+use_collision = true
+size = Vector3(1.2, 0.8, 0.6)
+material = SubResource("Mat_WoodProp")
+
+[node name="U8B_Toilet" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0.4, -7.0)
+use_collision = true
+size = Vector3(0.5, 0.8, 0.7)
+material = SubResource("Mat_TileWhite")
+
+[node name="U8B_Sink" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 0.9, -7.1)
+use_collision = true
+size = Vector3(0.6, 0.9, 0.4)
+material = SubResource("Mat_TileWhite")
+
+[node name="U8B_Bathtub" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.0, 0.3, -5.5)
+use_collision = true
+size = Vector3(0.8, 0.6, 1.8)
+material = SubResource("Mat_TileWhite")
+
+[node name="U8B_LivingLight" type="OmniLight3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.75, 2.5, 0.45)
+light_color = Color(1.0, 0.95, 0.88, 1)
+light_energy = 1.6
+omni_range = 6.0
+script = ExtResource("4_light_flicker")
+min_energy = 1.1
+max_energy = 1.5
+flicker_speed = 3.0
+
+[node name="U8B_BedLight" type="OmniLight3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 2.5, -5.0)
+light_color = Color(0.9, 0.88, 1.0, 1)
+light_energy = 1.0
+omni_range = 6.0
+
+[node name="U8B_BathLight" type="OmniLight3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.25, 2.5, -5.0)
+light_color = Color(0.95, 0.95, 1.0, 1)
+light_energy = 0.8
+omni_range = 6.0
+
+[node name="U8B_ExitSign" type="CSGBox3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.0, 2.5, -2.1)
+size = Vector3(0.6, 0.3, 0.05)
+material = SubResource("Mat_ExitSign")
+
+[node name="U8B_SmokeArea" type="Area3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.75, 1.25, 0.45)
+collision_mask = 1
+script = ExtResource("3_smoke_area")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Unit8B/U8B_SmokeArea"]
+shape = SubResource("Shp_U8B_Smoke")
+
+[node name="U8B_Smoke1" type="CPUParticles3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.0, 2.4, 1.5)
+amount = 60
+lifetime = 5.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.04000000000000001
+initial_velocity_max = 0.1
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
+
+[node name="U8B_Smoke2" type="CPUParticles3D" parent="Geometry/Unit8B"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.75, 2.4, -0.5)
+amount = 60
+lifetime = 6.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 40
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.032
+initial_velocity_max = 0.08
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
 
 [node name="ElevatorLobby" type="Node3D" parent="Geometry"]
 
@@ -1528,7 +2307,7 @@ size = Vector3(0.3, 2.0, 0.3)
 material = SubResource("Mat_Concrete")
 
 [node name="FireDoor_L8" type="StaticBody3D" parent="Geometry/Stairwell"]
-transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -9.0, 0, 5.5)
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -10.1, 0, 5.5)
 collision_layer = 2
 script = ExtResource("2_interactable")
 prompt_message = "Fire Exit — Feel door before opening [F]"
@@ -1545,8 +2324,8 @@ mesh = SubResource("Mesh_FireDoor_L8")
 material_override = SubResource("Mat_SteelDoor")
 
 [node name="ExitSignFireDoor" type="CSGBox3D" parent="Geometry/Stairwell"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.0, 2.5, 5.0)
-size = Vector3(0.6, 0.3, 0.05)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.1, 2.5, 5.0)
+size = Vector3(0.05, 0.3, 0.6)
 material = SubResource("Mat_ExitSign")
 
 [node name="ShaftRoof" type="CSGBox3D" parent="Geometry/Stairwell"]

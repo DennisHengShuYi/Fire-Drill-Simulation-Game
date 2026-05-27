@@ -12,7 +12,9 @@ extends CharacterBody3D
 var max_oxygen: float = 100.0
 var current_oxygen: float = 100.0
 var in_smoke_zone: bool = false
+var in_fire_zone: bool = false
 var cough_timer: float = 0.0
+var burn_sound_cooldown: float = 0.0
 
 @onready var camera: Camera3D = $Camera3D
 @onready var raycast: RayCast3D = $Camera3D/RayCast3D
@@ -30,6 +32,7 @@ var mouse_captured: bool = true
 var log_timer: float = 0.0
 var phone_active: bool = false
 var dialed_number: String = ""
+var call_state: int = 0
 
 @export var teleport_target_pos: Vector3 = Vector3(0, 0, 0)
 var is_outside: bool = false
@@ -202,15 +205,18 @@ func _physics_process(delta):
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	# Crouch
-	var target_height = stand_height
-	if Input.is_action_pressed("crouch"):
-		target_height = crouch_height
-		is_crouching = true
-		if in_smoke_zone:
-			GameManager.crouched_in_smoke = true
-	else:
+	# Crouch (Toggle Style: one press to toggle)
+	if Input.is_action_just_pressed("crouch"):
+		is_crouching = not is_crouching
+	
+	# Sprinting cancels crouch automatically if moving
+	if is_crouching and Input.is_action_pressed("sprint") and can_sprint and velocity.length() > 0.1:
 		is_crouching = false
+
+	var target_height = crouch_height if is_crouching else stand_height
+	if is_crouching and in_smoke_zone:
+		GameManager.crouched_in_smoke = true
+
 
 	var current_capsule: CapsuleShape3D = collision_shape.shape
 	current_capsule.height = lerp(current_capsule.height, target_height, crouch_speed * delta)
@@ -298,7 +304,33 @@ func check_interaction():
 # ---------------------------------------------------------------------------
 
 func process_smoke_inhalation(delta):
-	if in_smoke_zone:
+	# Fire zone damage & visual/audio feedback
+	if burn_sound_cooldown > 0.0:
+		burn_sound_cooldown -= delta
+
+	if in_fire_zone:
+		current_oxygen -= 45.0 * delta
+		
+		# High-frequency screen shake
+		camera.position.x += randf_range(-0.08, 0.08)
+		camera.position.y += randf_range(-0.08, 0.08)
+		
+		if burn_sound_cooldown <= 0.0:
+			burn_sound_cooldown = 0.8
+			show_log_message("*BURN* Stepping too close to the fire!")
+			play_burn_sound()
+			
+		# Check death by fire
+		if current_oxygen <= 0.0:
+			current_oxygen = 0.0
+			is_timer_active = false
+			GameManager.trigger_game_over(
+				"You got too close to the fire and suffered severe burns!",
+				"BOMBA TIP: House fires can exceed 600°C (1100°F) in minutes, producing extreme thermal radiation that causes instant severe burns. Never approach the fire source to collect belongings. Keep a safe distance and evacuate immediately!"
+			)
+			return
+
+	elif in_smoke_zone:
 		if not has_shown_crouch_tip:
 			has_shown_crouch_tip = true
 			show_log_message("Stay low! Crouch (C or Ctrl) to reduce smoke inhalation.")
@@ -343,17 +375,27 @@ func process_smoke_inhalation(delta):
 	else:
 		oxygen_bar.modulate = Color(1.0, 1.0, 1.0)
 
-	# Experience 2: dark-red vignette pulses when oxygen is critically low
+	# Experience 2: dark-red vignette pulses when oxygen is critically low or full red when burning
 	if vignette_overlay:
 		var v_alpha = 0.0
-		if current_oxygen < 25.0:
-			var pulse = (sin(Time.get_ticks_msec() * 0.008) + 1.0) * 0.5
-			v_alpha = 0.2 + pulse * 0.2
+		if in_fire_zone:
+			# Intense, rapid orange/red flicker when burning
+			var pulse = (sin(Time.get_ticks_msec() * 0.02) + 1.0) * 0.5
+			v_alpha = 0.5 + pulse * 0.3
+			vignette_overlay.color = Color(1.0, 0.1, 0.0, 1.0)
+		else:
+			vignette_overlay.color = Color(0.5, 0.0, 0.0, 1.0)
+			if current_oxygen < 25.0:
+				var pulse = (sin(Time.get_ticks_msec() * 0.008) + 1.0) * 0.5
+				v_alpha = 0.2 + pulse * 0.2
 		vignette_overlay.modulate.a = lerp(vignette_overlay.modulate.a, v_alpha, 3.0 * delta)
 
 	# Smoke overlay
 	var target_alpha = 0.0
-	if in_smoke_zone:
+	if in_fire_zone:
+		# Heat blur/smoke blend
+		target_alpha = 0.5
+	elif in_smoke_zone:
 		if not is_crouching:
 			target_alpha = 0.7 + (1.0 - (current_oxygen / max_oxygen)) * 0.3
 		else:
@@ -428,32 +470,70 @@ func open_phone_dialer():
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	phone_panel.visible = true
 	dialed_number = ""
+	call_state = 0
 	phone_display.text = "---"
 	phone_instructions.text = "Type the Emergency Number (BOMBA)"
 
 func press_number(num: String):
-	if dialed_number.length() < 5:
-		dialed_number += num
-		phone_display.text = dialed_number
+	if call_state == 0:
+		if dialed_number.length() < 5:
+			dialed_number += num
+			phone_display.text = dialed_number
+	elif call_state == 1:
+		# Service selection state: 1 for BOMBA, 2 for Polis, 3 for Ambulans
+		play_tick_beep()
+		if num == "1":
+			call_state = 2
+			phone_display.text = "BOMBA"
+			phone_instructions.text = "Connecting to BOMBA... Please hold..."
+			await get_tree().create_timer(1.5).timeout
+			if not phone_active: return
+			phone_instructions.text = "BOMBA: 'Bomba here. State location and emergency!'\n[Press 1 to Report Condominium Fire, 2 to Ask for Advice]"
+		else:
+			phone_display.text = "ERR"
+			phone_instructions.text = "Operator: 'Invalid selection. [Press 1 for BOMBA, 2 for Polis, 3 for Ambulans]'"
+	elif call_state == 2:
+		# Emergency selection state: 1 to report fire, 2 to ask for advice
+		play_tick_beep()
+		if num == "1":
+			call_state = 3
+			phone_display.text = "REPORTING"
+			phone_instructions.text = "You: 'There is a massive fire at Unit 8A of the Condominium! The kitchen is on fire and smoke is filling the hallway!'"
+			GameManager.escape_time = time_limit - current_time
+			await get_tree().create_timer(3.0).timeout
+			if not phone_active: return
+			phone_instructions.text = "BOMBA: 'Understood! Fire engine is dispatched to Unit 8A. Evacuate to a safe area immediately!'\n[Please wait for dispatcher to end call...]"
+			await get_tree().create_timer(3.0).timeout
+			if not phone_active: return
+			phone_active = false
+			phone_panel.visible = false
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			GameManager.trigger_victory()
+		elif num == "2":
+			phone_display.text = "ERR"
+			phone_instructions.text = "BOMBA: 'This line is for life-threatening fires only! State your fire emergency now! [Press 1 to Report Condominium Fire]'"
 
 func clear_dialer():
-	dialed_number = ""
-	phone_display.text = "---"
+	if call_state == 0:
+		dialed_number = ""
+		phone_display.text = "---"
 
 func call_dialer():
+	if call_state != 0:
+		return
 	if dialed_number == "999":
-		phone_instructions.text = "Connecting to BOMBA..."
-		# Serious Game Gap 1: record how long the escape took
-		GameManager.escape_time = time_limit - current_time
+		call_state = 1
+		phone_display.text = "999"
+		phone_instructions.text = "Dialing emergency services..."
+		play_tick_beep()
 		await get_tree().create_timer(1.5).timeout
-		phone_active = false
-		phone_panel.visible = false
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		GameManager.trigger_victory()
+		if not phone_active: return
+		phone_instructions.text = "Operator: '999 Emergency. Which service? [Press 1 for BOMBA, 2 for Polis, 3 for Ambulans]'"
 	else:
-		phone_instructions.text = "Wrong Number! Try again (Malaysia Emergency)."
+		phone_instructions.text = "Wrong Number! Try again (Malaysia Emergency: 999)."
 		dialed_number = ""
 		phone_display.text = "ERR"
+
 
 # ---------------------------------------------------------------------------
 # Audio helpers
@@ -463,6 +543,12 @@ func play_cough_sound():
 	var aud = AudioStreamPlayer.new()
 	aud.script = load("res://scripts/synth_audio.gd")
 	aud.synth_type = "cough"
+	add_child(aud)
+
+func play_burn_sound():
+	var aud = AudioStreamPlayer.new()
+	aud.script = load("res://scripts/synth_audio.gd")
+	aud.synth_type = "burn"
 	add_child(aud)
 
 func play_tick_beep():

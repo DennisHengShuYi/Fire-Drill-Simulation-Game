@@ -80,6 +80,14 @@ func _process(_delta):
 				if volume <= 0.0:
 					queue_free()
 					return
+			elif synth_type == "burn":
+				pulse_timer += 1.0 / mix_rate
+				var volume = max(0.0, 1.0 - pulse_timer * 2.5) # sizzle sound over 0.4 seconds
+				phase += 2.0 * PI * 180.0 / mix_rate
+				sample = (randf() * 2.0 - 1.0) * 0.3 * volume + sin(phase) * 0.08 * volume
+				if volume <= 0.0:
+					queue_free()
+					return
 					
 			buffer[i] = Vector2(sample, sample)
 			
