@@ -213,6 +213,8 @@ SHP_CABIN     = box_shape("Shp_Cabin",     4.0, 2.0, 1.6)
 SHP_GUARD     = box_shape("Shp_Guard",     0.5, 1.6, 0.5)
 SHP_PHONE     = box_shape("Shp_Phone",     0.4, 1.6, 0.4)
 SHP_EXTINGUISH= box_shape("Shp_Extinguish",0.2, 0.6, 0.2)
+MESH_EXTINGUISH = add_sub("Mesh_Extinguish", "BoxMesh", ['size = Vector3(0.2, 0.6, 0.2)'])
+
 
 # ── SCENE HEADER ─────────────────────────────────────────────────────────────
 
@@ -740,7 +742,7 @@ node("CollisionShape3D", "CollisionShape3D", G + "/FireExtinguisher", [
 ])
 node("Mesh", "MeshInstance3D", G + "/FireExtinguisher", [
     f'transform = {tf(0, 0.3, 0)}',
-    f'mesh = SubResource("{SHP_EXTINGUISH}")',
+    f'mesh = SubResource("{MESH_EXTINGUISH}")',
     f'material_override = SubResource("{M_PHONE_BOX}")',
 ])
 csg_box("FireExtinguisher_Sign", G, -4.95, 1.8, -3.5, 0.05, 0.25, 0.4, M_WARN_SIGN, collision=False)
@@ -945,7 +947,7 @@ node("CollisionShape3D", "CollisionShape3D", f"{SC}/CorridorExtinguisher", [
 ])
 node("Mesh", "MeshInstance3D", f"{SC}/CorridorExtinguisher", [
     f'transform = {tf(0, 0.3, 0)}',
-    f'mesh = SubResource("{SHP_EXTINGUISH}")',
+    f'mesh = SubResource("{MESH_EXTINGUISH}")',
     f'material_override = SubResource("{M_PHONE_BOX}")',
 ])
 csg_box("CorridorExtinguisher_Sign", SC, -2.0, 1.8, 6.52, 0.4, 0.25, 0.05, M_WARN_SIGN, collision=False)
