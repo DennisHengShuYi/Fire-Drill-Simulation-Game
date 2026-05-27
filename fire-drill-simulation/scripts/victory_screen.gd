@@ -22,6 +22,7 @@ func setup_scorecard():
 	if GameManager.called_999:        score += 20
 	if GameManager.got_wet_towel:     score += 10
 	if GameManager.stood_up_in_smoke: score -= 10
+	if GameManager.saved_neighbor or GameManager.neighbor_left_behind: score += 10
 
 	# Serious Game Gap 1: time bonus rewards quick, correct evacuation
 	var escape_secs = GameManager.escape_time
@@ -102,6 +103,15 @@ func setup_scorecard():
 			"rationale": "Reporting to the warden confirms your unit is empty, preventing rescue teams from re-entering."
 		}
 	]
+
+	if GameManager.neighbor_quest_attempted:
+		var n_label = "Saved trapped neighbor (delayed evacuation)" if GameManager.saved_neighbor else "Advised neighbor to use balcony exit (correct protocol)"
+		var n_rationale = "Heroic attempts can be dangerous in real fires due to toxic smoke. BOMBA recommends alerting neighbors (knocking loudly) but not delaying your evacuation or re-entering. Always report trapped neighbors to 999 or wardens."
+		steps.append({
+			"label": n_label,
+			"status": true,
+			"rationale": n_rationale
+		})
 
 	for step in steps:
 		var item = Label.new()

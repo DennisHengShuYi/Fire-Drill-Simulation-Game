@@ -15,6 +15,9 @@ var crouched_in_smoke: bool = false
 var got_wet_towel: bool = false
 var reported_to_warden: bool = false
 var fire_spread_count: int = 0
+var neighbor_quest_attempted: bool = false
+var saved_neighbor: bool = false
+var neighbor_left_behind: bool = false
 
 # Escape time (seconds elapsed when 999 is called)
 var escape_time: float = 0.0
@@ -37,6 +40,9 @@ func reset_state():
 	got_wet_towel = false
 	reported_to_warden = false
 	fire_spread_count = 0
+	neighbor_quest_attempted = false
+	saved_neighbor = false
+	neighbor_left_behind = false
 	escape_time = 0.0
 	_game_over_triggered = false
 
@@ -52,7 +58,10 @@ func setup_inputs():
 		"crouch": [KEY_C, KEY_CTRL],
 		"sprint": [KEY_SHIFT],
 		"interact": [KEY_E],
-		"feel_door": [KEY_F]
+		"feel_door": [KEY_F],
+		"knock_door": [KEY_K],
+		"dilemma_1": [KEY_1],
+		"dilemma_2": [KEY_2]
 	}
 
 	for action in inputs.keys():

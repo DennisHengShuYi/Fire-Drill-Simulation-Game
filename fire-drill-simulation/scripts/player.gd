@@ -46,6 +46,8 @@ var is_timer_active: bool = true
 var timer_label: Label = null
 var timer_last_second: int = -1
 var in_elevator_sequence: bool = false
+var dilemma_active: bool = false
+var dilemma_door: Node = null
 
 # --- Pause ---
 var is_paused: bool = false
@@ -157,6 +159,21 @@ func toggle_pause():
 func _physics_process(delta):
 	if not is_inside_tree():
 		return
+	if dilemma_active:
+		velocity = Vector3.ZERO
+		move_and_slide()
+		if dilemma_door:
+			prompt_label.text = "HELP NEIGHBOR? [1] Wait & Rescue (costs 15s) | [2] Advise to use Balcony Exit"
+		if Input.is_action_just_pressed("dilemma_1"):
+			dilemma_active = false
+			if dilemma_door and dilemma_door.has_method("resolve_dilemma"):
+				dilemma_door.resolve_dilemma(self, 1)
+		elif Input.is_action_just_pressed("dilemma_2"):
+			dilemma_active = false
+			if dilemma_door and dilemma_door.has_method("resolve_dilemma"):
+				dilemma_door.resolve_dilemma(self, 2)
+		return
+
 	if phone_active or in_elevator_sequence:
 		velocity = Vector3.ZERO
 		move_and_slide()
@@ -298,6 +315,8 @@ func check_interaction():
 			elif Input.is_action_just_pressed("feel_door"):
 				var feel_msg = collider.feel(self)
 				show_log_message(feel_msg)
+			elif Input.is_action_just_pressed("knock_door") and collider.has_method("knock"):
+				collider.knock(self)
 			return
 	prompt_label.text = ""
 

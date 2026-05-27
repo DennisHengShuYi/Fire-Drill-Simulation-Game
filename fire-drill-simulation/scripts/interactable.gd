@@ -23,10 +23,35 @@ var original_rotation_y: float = 0.0
 var original_position: Vector3
 var tween: Tween
 
+var has_trapped_npc: bool = false
+var trapped_npc_quest_state: String = "none" # "none", "discovered", "resolved"
+var trapped_timer: float = 0.0
+var has_shouted_proximity: bool = false
+
 func _ready():
 	original_rotation_y = rotation.y
 	original_position = global_position
 	collision_layer = 2
+	
+	if is_locked_door:
+		has_trapped_npc = randf() < 0.7
+		trapped_timer = randf_range(0.0, 5.0)
+
+func _process(delta):
+	if is_locked_door and has_trapped_npc and trapped_npc_quest_state == "none":
+		var player = get_tree().current_scene.get_node_or_null("Player")
+		if player:
+			var dist = global_position.distance_to(player.global_position)
+			if dist < 12.0 and not has_shouted_proximity:
+				has_shouted_proximity = true
+				play_sound_3d("help_muffled")
+				trapped_timer = 0.0
+		
+		trapped_timer += delta
+		if trapped_timer >= 8.0:
+			trapped_timer = 0.0
+			if player and global_position.distance_to(player.global_position) < 15.0:
+				play_sound_3d("help_muffled")
 
 func get_interact_prompt() -> String:
 	if is_door and is_stairs:
@@ -42,6 +67,10 @@ func get_interact_prompt() -> String:
 	elif is_sink:
 		return "[E] Sink (Get Wet Towel)"
 	elif is_locked_door:
+		if has_trapped_npc and trapped_npc_quest_state == "none":
+			return "[E] Try Door (Locked), [K] Knock on Door"
+		elif has_trapped_npc and trapped_npc_quest_state == "discovered":
+			return "[K] Talk / Respond"
 		return "[E] Try Door (Locked)"
 	elif is_npc:
 		return prompt_message if prompt_message != "Object" else "[E] Report to building warden"
@@ -200,3 +229,41 @@ func use_sink(player: CharacterBody3D):
 	GameManager.got_wet_towel = true
 	play_sound_3d("sizzle")
 	player.show_log_message("Wet towel obtained! Smoke exposure rate reduced by 50%!")
+
+func knock(player: CharacterBody3D):
+	if not is_locked_door or not has_trapped_npc:
+		player.show_log_message("You knock on the door, but there is no response.")
+		return
+		
+	if trapped_npc_quest_state == "none":
+		trapped_npc_quest_state = "discovered"
+		play_sound_3d("help_muffled")
+		player.show_log_message("Muffled Voice: 'Help! I'm trapped! The fire block is outside my kitchen and the door lock is jammed!'")
+		player.dilemma_active = true
+		player.dilemma_door = self
+	elif trapped_npc_quest_state == "discovered":
+		player.dilemma_active = true
+		player.dilemma_door = self
+
+func resolve_dilemma(player: CharacterBody3D, choice: int):
+	trapped_npc_quest_state = "resolved"
+	GameManager.neighbor_quest_attempted = true
+	
+	if choice == 1:
+		GameManager.saved_neighbor = true
+		play_sound_3d("door_creak")
+		
+		# Deduct 15s from timer
+		player.current_time -= 15.0
+		# Apply smoke penalty
+		var smoke_rate = 12.0
+		if player.has_wet_towel:
+			smoke_rate = 6.0
+		player.current_oxygen -= smoke_rate * 15.0
+		
+		player.show_log_message("Lock kicked open (+15s, -O2)! Resident: 'Thank you! Let's take the stairs!'")
+	else:
+		GameManager.neighbor_left_behind = true
+		play_sound_3d("help_muffled")
+		player.show_log_message("You: 'Evacuate via balcony!' Neighbor: 'Okay, I'll use the balcony exit!'")
+

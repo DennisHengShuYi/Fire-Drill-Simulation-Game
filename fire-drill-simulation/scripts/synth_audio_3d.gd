@@ -89,6 +89,16 @@ func _process(_delta):
 				if volume <= 0.0:
 					queue_free()
 					return
+			elif synth_type == "help_muffled":
+				pulse_timer += 1.0 / mix_rate
+				var volume = max(0.0, 1.2 - pulse_timer * 0.8) # lasts 1.5s
+				phase += 2.0 * PI * (250.0 + sin(pulse_timer * 20.0) * 60.0) / mix_rate
+				var base_wave = sin(phase) * 0.2
+				var speech_noise = (randf() * 2.0 - 1.0) * 0.015
+				sample = (base_wave + speech_noise) * volume
+				if volume <= 0.0:
+					queue_free()
+					return
 					
 			buffer[i] = Vector2(sample, sample)
 			
