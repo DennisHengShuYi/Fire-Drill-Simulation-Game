@@ -79,6 +79,7 @@ ext_resources = [
     '[ext_resource type="Script" path="res://scripts/fire_area.gd" id="8_fire_area"]',
     '[ext_resource type="Script" path="res://scripts/npc.gd" id="9_npc"]',
     '[ext_resource type="Texture2D" path="res://assets/particle_soft.png" id="10_particle_soft"]',
+    '[ext_resource type="Script" path="res://scripts/npc_spawner.gd" id="11_npc_spawner"]',
 ]
 
 # ── materials as sub-resources ───────────────────────────────────────────────
@@ -355,6 +356,64 @@ def streetlight_static(name, parent, px, py, pz):
     csg_box(f"{name}_Head", parent, px, py + 4.1, pz, 0.5, 0.2, 0.5, M_FLOOR_NUM, collision=False)
     # Light source
     omni_light(f"{name}_Light", parent, px, py + 3.8, pz, 1.5, color(1.0, 0.9, 0.7), omni_range=12.0)
+
+def fence_static(name, parent, x1, z1, x2, z2, height=1.2, mat_post=None, mat_bar=None):
+    """Emit a procedural fence segment with concrete posts and metal horizontal rails."""
+    import math
+    if mat_post is None:
+        mat_post = M_CONCRETE
+    if mat_bar is None:
+        mat_bar = M_RAILING
+    
+    dx = x2 - x1
+    dz = z2 - z1
+    dist = math.sqrt(dx*dx + dz*dz)
+    if dist < 0.1:
+        return
+    
+    # Place posts every 2.5 meters
+    num_posts = max(2, int(dist / 2.5) + 1)
+    
+    node(name, "Node3D", parent, [])
+    
+    for i in range(num_posts):
+        t = i / (num_posts - 1)
+        px = x1 + dx * t
+        pz = z1 + dz * t
+        py = -22.6 + height / 2.0
+        
+        # Post (CSGBox3D)
+        csg_box(f"{name}_Post_{i}", f"{parent}/{name}", px, py, pz, 0.18, height, 0.18, mat_post)
+        
+    # Place horizontal rails between posts
+    for i in range(num_posts - 1):
+        t1 = i / (num_posts - 1)
+        t2 = (i + 1) / (num_posts - 1)
+        ax = x1 + dx * t1
+        az = z1 + dz * t1
+        bx = x1 + dx * t2
+        bz = z1 + dz * t2
+        
+        cx = (ax + bx) / 2.0
+        cz = (az + bz) / 2.0
+        
+        segment_dist = math.sqrt((bx-ax)**2 + (bz-az)**2)
+        angle_y = math.degrees(math.atan2(bx - ax, bz - az))
+        
+        # Top rail
+        csg_box(f"{name}_TopRail_{i}", f"{parent}/{name}", cx, -22.6 + height - 0.1, cz, 0.05, 0.05, segment_dist, mat_bar, extra_props=[
+            f'transform = {tf_rot_y(angle_y, cx, -22.6 + height - 0.1, cz)}'
+        ])
+        
+        # Bottom rail
+        csg_box(f"{name}_BotRail_{i}", f"{parent}/{name}", cx, -22.6 + 0.2, cz, 0.05, 0.05, segment_dist, mat_bar, extra_props=[
+            f'transform = {tf_rot_y(angle_y, cx, -22.6 + 0.2, cz)}'
+        ])
+        
+        # Mid rail
+        csg_box(f"{name}_MidRail_{i}", f"{parent}/{name}", cx, -22.6 + height / 2.0, cz, 0.03, 0.03, segment_dist, mat_bar, extra_props=[
+            f'transform = {tf_rot_y(angle_y, cx, -22.6 + height / 2.0, cz)}'
+        ])
 
 def smoke_particle(name, parent, px, py, pz, col=(0.15,0.15,0.15,0.6),
                    vel=0.5, spread=40, lifetime=3.0, is_fire=False):
@@ -1220,6 +1279,11 @@ node("Evacuee_L2", "CharacterBody3D", SW, [
     'start_waypoint = 12',
 ])
 
+# Dynamic NPC Spawner
+node("NPCSpawner", "Node3D", SW, [
+    'script = ExtResource("11_npc_spawner")',
+])
+
 
 # ── OUTSIDE ──────────────────────────────────────────────────────────────────
 node("Outside", "Node3D", ".", [])
@@ -1352,6 +1416,17 @@ node("NightLight", "DirectionalLight3D", OUT, [
     f'light_color = {color(0.4, 0.5, 0.7)}',
     'light_energy = 0.6',
 ])
+
+# Enclose the condominium boundary with highly premium procedural fences
+fence_static("FenceWest", OUT, -39.0, -15.0, -39.0, 45.0, height=1.5)
+fence_static("FenceEast", OUT, 39.0, -15.0, 39.0, 45.0, height=1.5)
+fence_static("FenceSouth", OUT, -39.0, 44.0, 39.0, 44.0, height=1.5)
+fence_static("FenceNorth_W", OUT, -39.0, -14.0, -10.0, -14.0, height=1.5)
+fence_static("FenceNorth_E", OUT, 21.0, -14.0, 39.0, -14.0, height=1.5)
+
+# Fences separating the asphalt driveway from the grass zones with clear walk corridors
+fence_static("GrassWestFence", OUT, -15.0, 8.0, -15.0, 40.0, height=1.1)
+fence_static("GrassEastFence", OUT, 15.0, 8.0, 15.0, 40.0, height=1.1)
 
 # ── ASSEMBLE THE FILE ────────────────────────────────────────────────────────
 
