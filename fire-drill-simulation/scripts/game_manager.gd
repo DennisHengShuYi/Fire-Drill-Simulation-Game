@@ -14,6 +14,7 @@ var called_999: bool = false
 var crouched_in_smoke: bool = false
 var got_wet_towel: bool = false
 var reported_to_warden: bool = false
+var fire_spread_count: int = 0
 
 # Escape time (seconds elapsed when 999 is called)
 var escape_time: float = 0.0
@@ -35,6 +36,7 @@ func reset_state():
 	crouched_in_smoke = false
 	got_wet_towel = false
 	reported_to_warden = false
+	fire_spread_count = 0
 	escape_time = 0.0
 	_game_over_triggered = false
 

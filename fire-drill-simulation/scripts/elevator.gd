@@ -78,7 +78,7 @@ func play_sound(type: String) -> Node:
 	var aud = AudioStreamPlayer3D.new()
 	aud.script = load("res://scripts/synth_audio_3d.gd")
 	aud.synth_type = type
-	aud.global_position = global_position
 	aud.max_distance = 15.0
 	get_tree().current_scene.add_child(aud)
+	aud.global_position = global_position
 	return aud

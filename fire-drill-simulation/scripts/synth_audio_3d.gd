@@ -81,6 +81,14 @@ func _process(_delta):
 				if volume <= 0.0:
 					queue_free()
 					return
+			elif synth_type == "npc_voice":
+				pulse_timer += 1.0 / mix_rate
+				var volume = max(0.0, 1.0 - pulse_timer * 1.5)
+				phase += 2.0 * PI * (350.0 + sin(pulse_timer * 40.0) * 80.0) / mix_rate
+				sample = sin(phase) * 0.25 * volume
+				if volume <= 0.0:
+					queue_free()
+					return
 					
 			buffer[i] = Vector2(sample, sample)
 			

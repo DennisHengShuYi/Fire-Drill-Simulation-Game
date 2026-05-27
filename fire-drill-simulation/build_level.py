@@ -77,6 +77,8 @@ ext_resources = [
     '[ext_resource type="Script" path="res://scripts/synth_audio_3d.gd" id="6_synth_audio_3d"]',
     '[ext_resource type="Script" path="res://scripts/elevator.gd" id="7_elevator"]',
     '[ext_resource type="Script" path="res://scripts/fire_area.gd" id="8_fire_area"]',
+    '[ext_resource type="Script" path="res://scripts/npc.gd" id="9_npc"]',
+    '[ext_resource type="Texture2D" path="res://assets/particle_soft.png" id="10_particle_soft"]',
 ]
 
 # ── materials as sub-resources ───────────────────────────────────────────────
@@ -138,6 +140,7 @@ add_sub("Mat_FireParticle", "StandardMaterial3D", [
     'shading_mode = 0',
     'vertex_color_use_as_albedo = true',
     'albedo_color = Color(1, 1, 1, 1)',
+    'albedo_texture = ExtResource("10_particle_soft")',
     'billboard_mode = 1',
     'billboard_keep_scale = true',
 ])
@@ -153,6 +156,7 @@ add_sub("Mat_SmokeParticle", "StandardMaterial3D", [
     'transparency = 1',
     'vertex_color_use_as_albedo = true',
     'albedo_color = Color(1, 1, 1, 1)',
+    'albedo_texture = ExtResource("10_particle_soft")',
     'billboard_mode = 1',
     'billboard_keep_scale = true',
 ])
@@ -162,7 +166,7 @@ add_sub("Mesh_SmokeParticle", "QuadMesh", [
 ])
 add_sub("Grad_Smoke", "Gradient", [
     'offsets = PackedFloat32Array(0, 0.3, 0.8, 1)',
-    'colors = PackedColorArray(0.35, 0.35, 0.35, 0.3, 0.25, 0.25, 0.25, 0.5, 0.15, 0.15, 0.15, 0.3, 0.1, 0.1, 0.1, 0)',
+    'colors = PackedColorArray(0.35, 0.35, 0.35, 0.3, 0.25, 0.25, 0.25, 0.5, 0.15, 0.15, 0.3, 0.1, 0.1, 0.1, 0)',
 ])
 
 # Particle Scale Curves
@@ -360,6 +364,7 @@ def smoke_particle(name, parent, px, py, pz, col=(0.15,0.15,0.15,0.6),
             'scale_amount_max = 1.4',
             'scale_amount_curve = SubResource("Curve_FireScale")',
             'color_ramp = SubResource("Grad_Fire")',
+            'local_coords = true',
         ]
         node(name, "CPUParticles3D", parent, props)
 
@@ -395,6 +400,7 @@ def smoke_particle(name, parent, px, py, pz, col=(0.15,0.15,0.15,0.6),
             'scale_amount_max = 1.8',
             'scale_amount_curve = SubResource("Curve_SmokeScale")',
             'color_ramp = SubResource("Grad_Smoke")',
+            'local_coords = true',
         ]
         node(name, "CPUParticles3D", parent, props)
 
@@ -1160,6 +1166,44 @@ door_static("GroundExitDoor", SW, shaft_cx, -22.4, 5.9,
 
 # Exit sign above ground exit door
 csg_box("GroundExitSign", SW, shaft_cx, -22.4 + 2.3, 4.2, 1.0, 0.3, 0.05, M_EXIT_SIGN, collision=False)
+
+# NPCs (Evacuating residents descending stairs)
+# NPC 1 starts on L7 landing (waypoint index 2)
+node("Evacuee_L7", "CharacterBody3D", SW, [
+    f'transform = {tf(-12.5, -2.7, -3.7)}',
+    'collision_layer = 4',
+    'collision_mask = 3',
+    f'script = ExtResource("9_npc")',
+    'start_waypoint = 2',
+])
+
+# NPC 2 starts on L5 landing (waypoint index 6)
+node("Evacuee_L5", "CharacterBody3D", SW, [
+    f'transform = {tf(-12.5, -8.3, -3.7)}',
+    'collision_layer = 4',
+    'collision_mask = 3',
+    f'script = ExtResource("9_npc")',
+    'start_waypoint = 6',
+])
+
+# NPC 3 starts on L3 landing (waypoint index 10)
+node("Evacuee_L3", "CharacterBody3D", SW, [
+    f'transform = {tf(-12.5, -13.9, -3.7)}',
+    'collision_layer = 4',
+    'collision_mask = 3',
+    f'script = ExtResource("9_npc")',
+    'start_waypoint = 10',
+])
+
+# NPC 4 starts on L2 landing (waypoint index 12)
+node("Evacuee_L2", "CharacterBody3D", SW, [
+    f'transform = {tf(-12.5, -16.7, 4.7)}',
+    'collision_layer = 4',
+    'collision_mask = 3',
+    f'script = ExtResource("9_npc")',
+    'start_waypoint = 12',
+])
+
 
 # ── OUTSIDE ──────────────────────────────────────────────────────────────────
 node("Outside", "Node3D", ".", [])

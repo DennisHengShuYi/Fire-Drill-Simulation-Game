@@ -155,6 +155,8 @@ func toggle_pause():
 # ---------------------------------------------------------------------------
 
 func _physics_process(delta):
+	if not is_inside_tree():
+		return
 	if phone_active or in_elevator_sequence:
 		velocity = Vector3.ZERO
 		move_and_slide()

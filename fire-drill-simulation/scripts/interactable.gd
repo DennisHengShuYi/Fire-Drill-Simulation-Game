@@ -59,6 +59,9 @@ func interact(player: CharacterBody3D):
 			player.in_smoke_zone = false
 			player.show_log_message("You push through the exit door to the outside! Walk to the assembly point!")
 	elif is_door:
+		if name == "KitchenDoor" and GameManager.fire_spread_count > 2:
+			player.show_log_message("The kitchen door is completely blocked by fire!")
+			return
 		toggle_door(player)
 		if name == "StairsExitDoor" and door_opened:
 			player.is_outside = true
@@ -83,6 +86,8 @@ func feel(player: CharacterBody3D) -> String:
 		return "Nothing to feel."
 
 	if is_door:
+		if name == "KitchenDoor" and GameManager.fire_spread_count > 2:
+			return "The kitchen door is completely blocked by fire!"
 		if name.to_lower().contains("bedroom"):
 			GameManager.felt_bedroom_door = true
 		elif name.to_lower().contains("kitchen"):
@@ -183,9 +188,9 @@ func play_sound_3d(type: String):
 	var aud = AudioStreamPlayer3D.new()
 	aud.script = load("res://scripts/synth_audio_3d.gd")
 	aud.synth_type = type
-	aud.global_position = global_position
 	aud.max_distance = 15.0
 	get_tree().current_scene.add_child(aud)
+	aud.global_position = global_position
 
 func use_sink(player: CharacterBody3D):
 	if player.has_wet_towel:
