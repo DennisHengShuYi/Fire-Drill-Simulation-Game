@@ -117,3 +117,33 @@ func spawn_adjacent_fire(offset: Vector3, suffix: String = ""):
 	if new_particles.has_method("restart"):
 		new_particles.restart()
 
+## Called by the extinguisher PASS minigame on success.
+## Shrinks this fire zone for `duration` seconds then restores it.
+func shrink_fire(duration: float = 10.0):
+	var original_scale = scale
+	var half_scale = original_scale * 0.4  # reduce to 40 % — visually suppressed
+
+	# Shrink hazard Area3D
+	scale = half_scale
+
+	# Shrink sibling particles
+	var particle_name = name.replace("_Hazard", "")
+	var particles = get_parent().get_node_or_null(particle_name)
+	var original_particle_scale = Vector3.ONE
+	if particles and particles is CPUParticles3D:
+		original_particle_scale = particles.scale
+		particles.scale = half_scale
+		particles.emitting = false   # suppress visuals briefly
+
+	# Wait, then restore
+	await get_tree().create_timer(duration).timeout
+
+	# Restore hazard Area3D
+	scale = original_scale
+
+	# Restore particles
+	if is_instance_valid(particles) and particles is CPUParticles3D:
+		particles.scale = original_particle_scale
+		particles.emitting = true
+		if particles.has_method("restart"):
+			particles.restart()

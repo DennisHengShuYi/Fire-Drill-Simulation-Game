@@ -1107,6 +1107,7 @@ collision_layer = 2
 script = ExtResource("2_interactable")
 prompt_message = "Fire extinguisher — [E] Use (PASS method: Pull, Aim, Squeeze, Sweep)"
 can_feel = false
+is_extinguisher = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Unit8A/FireExtinguisher"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
@@ -1774,6 +1775,7 @@ collision_layer = 2
 script = ExtResource("2_interactable")
 prompt_message = "[E] Fire extinguisher — Pull pin, Aim low, Squeeze, Sweep side to side"
 can_feel = false
+is_extinguisher = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/SharedCorridor/CorridorExtinguisher"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)

@@ -732,6 +732,7 @@ node("FireExtinguisher", "StaticBody3D", G, [
     f'script = ExtResource("2_interactable")',
     'prompt_message = "Fire extinguisher — [E] Use (PASS method: Pull, Aim, Squeeze, Sweep)"',
     'can_feel = false',
+    'is_extinguisher = true',
 ])
 node("CollisionShape3D", "CollisionShape3D", G + "/FireExtinguisher", [
     f'transform = {tf(0, 0.3, 0)}',
@@ -935,6 +936,7 @@ node("CorridorExtinguisher", "StaticBody3D", SC, [
     f'script = ExtResource("2_interactable")',
     'prompt_message = "[E] Fire extinguisher — Pull pin, Aim low, Squeeze, Sweep side to side"',
     'can_feel = false',
+    'is_extinguisher = true',
 ])
 node("CollisionShape3D", "CollisionShape3D", f"{SC}/CorridorExtinguisher", [
     f'transform = {tf(0, 0.3, 0)}',

@@ -18,6 +18,8 @@ extends StaticBody3D
 @export var is_sink: bool = false
 @export var is_locked_door: bool = false
 @export var is_npc: bool = false
+@export var is_extinguisher: bool = false
+var extinguisher_used: bool = false
 
 var original_rotation_y: float = 0.0
 var original_position: Vector3
@@ -72,6 +74,10 @@ func get_interact_prompt() -> String:
 		elif has_trapped_npc and trapped_npc_quest_state == "discovered":
 			return "[K] Talk / Respond"
 		return "[E] Try Door (Locked)"
+	elif is_extinguisher:
+		if extinguisher_used:
+			return "Fire Extinguisher (empty — already used)"
+		return "[E] Use Fire Extinguisher (PASS technique)"
 	elif is_npc:
 		return prompt_message if prompt_message != "Object" else "[E] Report to building warden"
 	return "[E] " + prompt_message
@@ -104,6 +110,8 @@ func interact(player: CharacterBody3D):
 		use_phone(player)
 	elif is_sink:
 		use_sink(player)
+	elif is_extinguisher:
+		use_extinguisher(player)
 	elif is_locked_door:
 		player.show_log_message("This neighbor's door is locked! You must evacuate using the stairs!")
 	elif is_npc:
@@ -229,6 +237,21 @@ func use_sink(player: CharacterBody3D):
 	GameManager.got_wet_towel = true
 	play_sound_3d("sizzle")
 	player.show_log_message("Wet towel obtained! Smoke exposure rate reduced by 50%!")
+
+func use_extinguisher(player: CharacterBody3D):
+	if extinguisher_used:
+		player.show_log_message("The extinguisher is empty. A standard 1 kg extinguisher only lasts 8-12 seconds!")
+		return
+	if in_smoke_zone_heavy(player):
+		player.show_log_message("BOMBA TIP: Never use an extinguisher if the room is already thick with smoke — get out!")
+		return
+	# Kick off the PASS minigame on the player
+	if player.has_method("start_extinguisher_minigame"):
+		player.start_extinguisher_minigame(self)
+
+func in_smoke_zone_heavy(player: CharacterBody3D) -> bool:
+	# If the corridor fire has grown very large, block extinguisher use for realism
+	return player.in_fire_zone
 
 func knock(player: CharacterBody3D):
 	if not is_locked_door or not has_trapped_npc:

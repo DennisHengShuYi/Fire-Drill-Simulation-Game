@@ -49,6 +49,11 @@ var in_elevator_sequence: bool = false
 var dilemma_active: bool = false
 var dilemma_door: Node = null
 
+# --- Extinguisher Minigame ---
+var in_extinguisher_minigame: bool = false
+var minigame_step: int = 0
+var current_extinguisher: Node = null
+
 # --- Pause ---
 var is_paused: bool = false
 var pause_panel: Panel = null
@@ -133,6 +138,11 @@ func _input(event):
 	if phone_active:
 		return
 
+	if in_extinguisher_minigame:
+		if event is InputEventKey and event.pressed:
+			process_minigame_key(event.keycode)
+		return
+
 	if event is InputEventMouseMotion and mouse_captured:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		camera.rotate_x(-event.relative.y * mouse_sensitivity)
@@ -174,10 +184,19 @@ func _physics_process(delta):
 				dilemma_door.resolve_dilemma(self, 2)
 		return
 
-	if phone_active or in_elevator_sequence:
+	if phone_active or in_elevator_sequence or in_extinguisher_minigame:
 		velocity = Vector3.ZERO
 		move_and_slide()
-		if in_elevator_sequence:
+		if in_extinguisher_minigame:
+			var steps = [
+				"[P] Pull the pin!",
+				"[A] Aim at the base of the fire!",
+				"[S] Squeeze the handle!",
+				"[S] Sweep side-to-side!"
+			]
+			prompt_label.text = "PASS TECHNIQUE MINIGAME\nStep %d/4: %s" % [minigame_step + 1, steps[minigame_step]]
+			process_smoke_inhalation(delta)
+		elif in_elevator_sequence:
 			camera.position.x = randf_range(-0.015, 0.015)
 			camera.position.y = lerp(camera.position.y, stand_height - 0.2 + randf_range(-0.015, 0.015), 5.0 * delta)
 		return
@@ -801,3 +820,111 @@ func _update_pause_objectives():
 		"%s Call BOMBA 999 outside" % (c if GameManager.called_999 else e),
 	]
 	_pause_obj_label.text = "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Extinguisher PASS Minigame Implementation
+# ---------------------------------------------------------------------------
+
+func start_extinguisher_minigame(extinguisher: Node):
+	in_extinguisher_minigame = true
+	minigame_step = 0
+	current_extinguisher = extinguisher
+	show_log_message("Using extinguisher... Follow the PASS technique: Pull, Aim, Squeeze, Sweep!")
+
+func process_minigame_key(keycode: int):
+	# Ignore standard UI toggle / pause keys
+	if keycode == KEY_ESCAPE or keycode == KEY_TAB:
+		return
+		
+	var expected_keys = [KEY_P, KEY_A, KEY_S, KEY_S]
+	var current_expected = expected_keys[minigame_step]
+	
+	if keycode == current_expected:
+		minigame_step += 1
+		play_tick_beep()
+		if minigame_step >= 4:
+			complete_extinguisher_success()
+	else:
+		complete_extinguisher_failure()
+
+func complete_extinguisher_success():
+	in_extinguisher_minigame = false
+	prompt_label.text = ""
+	
+	if current_extinguisher:
+		current_extinguisher.extinguisher_used = true
+		current_extinguisher.play_sound_3d("sizzle")
+		
+	show_log_message("SUCCESS! PASS technique performed perfectly! You sprayed the fire.")
+	
+	# Shrink nearest fire zone
+	var nearest_fire = get_nearest_fire()
+	if nearest_fire and nearest_fire.has_method("shrink_fire"):
+		nearest_fire.shrink_fire(10.0)
+		show_log_message("SUCCESS! The nearest fire is suppressed! Corridor is cleared for 10s!")
+	else:
+		show_log_message("SUCCESS! Extinguisher used, but no active fire nearby to suppress.")
+		
+	current_extinguisher = null
+
+func complete_extinguisher_failure():
+	in_extinguisher_minigame = false
+	prompt_label.text = ""
+	
+	if current_extinguisher:
+		current_extinguisher.extinguisher_used = true
+		current_extinguisher.play_sound_3d("sizzle")
+		
+	# Reduce air supply by 20.0
+	current_oxygen -= 20.0
+	current_oxygen = clamp(current_oxygen, 0.0, max_oxygen)
+	oxygen_bar.value = current_oxygen
+	
+	play_cough_sound()
+	camera.position.x += randf_range(-0.15, 0.15)
+	camera.position.y += randf_range(-0.15, 0.15)
+	
+	show_log_message("FAILED! Incorrect technique! CO2 cloud released. You inhaled gas (-20 Oxygen)!")
+	
+	if current_oxygen <= 0.0:
+		is_timer_active = false
+		GameManager.trigger_game_over(
+			"You inhaled too much toxic smoke and suffocated!",
+			"BOMBA TIP: Smoke rises and contains deadly hot gases. Always STAY LOW (crouch or crawl) during a fire. This allows you to breathe the cooler, cleaner layer of air near the ground!"
+		)
+		current_extinguisher = null
+		return
+		
+	# Output educational tip about PASS
+	var timer = get_tree().create_timer(4.5)
+	timer.timeout.connect(func():
+		if is_inside_tree():
+			show_log_message("BOMBA TIP: Remember PASS — Pull the pin, Aim at the fire base, Squeeze handle, Sweep side-to-side!")
+	)
+	
+	current_extinguisher = null
+
+func get_nearest_fire() -> Area3D:
+	var nearest_fire: Area3D = null
+	# Let's search all Area3D children in get_tree().current_scene
+	var res = find_nearest_fire_recursive(get_tree().current_scene, 99999.0)
+	if res[0] != null:
+		nearest_fire = res[0]
+	return nearest_fire
+
+func find_nearest_fire_recursive(node: Node, min_dist: float) -> Array:
+	var nearest: Area3D = null
+	var best_dist = min_dist
+	if node is Area3D and node.has_method("shrink_fire"):
+		var dist = global_position.distance_to(node.global_position)
+		if dist < best_dist:
+			best_dist = dist
+			nearest = node
+	for child in node.get_children():
+		var res = find_nearest_fire_recursive(child, best_dist)
+		if res[0] != null:
+			nearest = res[0]
+			best_dist = res[1]
+	return [nearest, best_dist]
+
