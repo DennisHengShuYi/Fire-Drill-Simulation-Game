@@ -160,6 +160,8 @@ func _physics_process(delta: float) -> void:
 		if other == self:
 			continue
 		var to_other = other.global_position - global_position
+		if abs(to_other.y) > 2.0:
+			continue
 		var to_other_xz = Vector3(to_other.x, 0.0, to_other.z)
 		if to_other_xz.length() < QUEUE_RADIUS:
 			var dot = forward_xz.dot(to_other_xz.normalized())

@@ -1233,6 +1233,33 @@ csg_box("StreetFloor", OUT, 0, -22.6, 15, 80, 0.1, 60, M_ASPHALT)
 # Covers X = [-10, 21] (width 31m) and Z = [-11, 7.5] (depth 18.5m)
 csg_box("CondoBuildingBody", OUT, 5.5, -11.25, -1.75, 31.0, 22.5, 18.5, M_CONCRETE)
 
+# Background Condo Tower A (West side, non-enterable decorative skyscraper)
+# Positioned at Y = -2.6 (height 40m, sitting on Y = -22.6, extending to Y = 17.4)
+csg_box("CondoTowerA", OUT, -35.0, -2.6, 10.0, 16.0, 40.0, 16.0, M_CONCRETE_DARK)
+# Add decorative windows for Tower A on the East face (X = -27.0)
+for f in range(1, 13):
+    y_win = -22.6 + f * 3.0 + 0.5
+    for z_win in [4.0, 10.0, 16.0]:
+        csg_box(f"TowerA_Win_{f}_{int(z_win)}", OUT, -26.98, y_win, z_win, 0.05, 1.4, 1.2, M_ASPHALT, collision=False)
+
+# Background Condo Tower B (East side, non-enterable decorative skyscraper)
+# Positioned at Y = 2.4 (height 50m, sitting on Y = -22.6, extending to Y = 27.4)
+csg_box("CondoTowerB", OUT, 35.0, 2.4, 20.0, 16.0, 50.0, 16.0, M_DRYWALL)
+# Add decorative windows for Tower B on the West face (X = 27.0)
+for f in range(1, 16):
+    y_win = -22.6 + f * 3.0 + 0.5
+    for z_win in [14.0, 20.0, 26.0]:
+        csg_box(f"TowerB_Win_{f}_{int(z_win)}", OUT, 26.98, y_win, z_win, 0.05, 1.4, 1.2, M_ASPHALT, collision=False)
+
+# Background Condo Tower C (North-East background tower)
+# Positioned at Y = -5.1 (height 35m, sitting on Y = -22.6, extending to Y = 12.4)
+csg_box("CondoTowerC", OUT, 25.0, -5.1, -18.0, 18.0, 35.0, 18.0, M_CONCRETE)
+# Add decorative windows for Tower C on the South face (Z = -9.0)
+for f in range(1, 11):
+    y_win = -22.6 + f * 3.2 + 0.5
+    for x_win in [18.0, 25.0, 32.0]:
+        csg_box(f"TowerC_Win_{f}_{int(x_win)}", OUT, x_win, y_win, -8.98, 1.2, 1.4, 0.05, M_ASPHALT, collision=False)
+
 # Add decorative windows for floors 1 to 7 on the South face (Z = 7.5)
 # Y levels correspond to floor heights: -22.4 base + floor offset + window height offset
 for f_idx in range(1, 8):
