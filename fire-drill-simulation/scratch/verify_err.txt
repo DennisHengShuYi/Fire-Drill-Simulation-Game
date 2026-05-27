@@ -1,0 +1,34 @@
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/player.gd:213)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_extinguisher.gd:4)
+ERROR: Failed to load script "res://scripts/player.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_extinguisher.gd:4)
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/interactable.gd:92)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_extinguisher.gd:4)
+ERROR: Failed to load script "res://scripts/interactable.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_extinguisher.gd:4)
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/elevator.gd:18)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_extinguisher.gd:4)
+ERROR: Failed to load script "res://scripts/elevator.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_extinguisher.gd:4)
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/fire_area.gd:63)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_extinguisher.gd:4)
+ERROR: Failed to load script "res://scripts/fire_area.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_extinguisher.gd:4)
+FAIL: FireExtinguisher missing is_extinguisher property
+FAIL: CorridorExtinguisher missing is_extinguisher property

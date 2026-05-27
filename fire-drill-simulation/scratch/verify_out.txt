@@ -1,0 +1,13 @@
+Godot Engine v4.6.2.stable.official.71f334935 - https://godotengine.org
+
+OK: FireExtinguisher found
+OK: CorridorExtinguisher found
+OK: FireExtinguisher_Sign: FOUND
+OK: CorridorExtinguisher_Sign: FOUND
+OK: Fire areas with shrink_fire(): 0
+OK: Player found
+FAIL: start_extinguisher_minigame method MISSING
+FAIL: process_minigame_key method MISSING
+
+=== HEADLESS CHECK COMPLETE ===
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
