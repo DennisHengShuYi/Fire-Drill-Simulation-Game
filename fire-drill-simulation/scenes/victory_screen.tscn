@@ -2,10 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/victory_screen.gd" id="1_script"]
 
-[sub_model_capsule id="CapsuleShape3D_1"]
-radius = 0.4
-height = 1.8
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Panel"]
 bg_color = Color(0.08, 0.12, 0.1, 0.8)
 border_width_left = 3
@@ -138,7 +134,7 @@ theme_override_font_sizes/font_size = 14
 text = "EVACUATION SCORECARD"
 horizontal_alignment = 1
 
-[node name="ScoreList" type="VBoxContainer" parent="Panel/ScorecardPanel"]
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel/ScorecardPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -149,10 +145,14 @@ offset_right = -15.0
 offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 6
-alignment = 1
 
-[node name="Placeholder" type="Label" parent="Panel/ScorecardPanel/ScoreList"]
+[node name="ScoreList" type="VBoxContainer" parent="Panel/ScorecardPanel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="Placeholder" type="Label" parent="Panel/ScorecardPanel/ScrollContainer/ScoreList"]
 layout_mode = 2
 text = "[ PASS ] Felt door handle"
 

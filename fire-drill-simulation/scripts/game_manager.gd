@@ -1,6 +1,5 @@
 extends Node
 
-# Game Over contexts
 var game_over_reason: String = ""
 var game_over_tip: String = ""
 
@@ -14,6 +13,14 @@ var used_stairs: bool = false
 var called_999: bool = false
 var crouched_in_smoke: bool = false
 var got_wet_towel: bool = false
+var reported_to_warden: bool = false
+
+# Escape time (seconds elapsed when 999 is called)
+var escape_time: float = 0.0
+
+# BUG 3 FIX: guard against trigger_game_over / trigger_victory firing twice
+# in the same frame (e.g. oxygen hits 0 AND timer expires simultaneously).
+var _game_over_triggered: bool = false
 
 func reset_state():
 	game_over_reason = ""
@@ -27,12 +34,14 @@ func reset_state():
 	called_999 = false
 	crouched_in_smoke = false
 	got_wet_towel = false
+	reported_to_warden = false
+	escape_time = 0.0
+	_game_over_triggered = false
 
 func _ready():
 	setup_inputs()
 
 func setup_inputs():
-	# Define core controls programmatically to keep it robust and self-contained
 	var inputs = {
 		"move_forward": [KEY_W, KEY_UP],
 		"move_backward": [KEY_S, KEY_DOWN],
@@ -43,30 +52,52 @@ func setup_inputs():
 		"interact": [KEY_E],
 		"feel_door": [KEY_F]
 	}
-	
+
 	for action in inputs.keys():
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
-		
-		# Clear existing events to avoid duplicates
+		# action_erase_events clears duplicates on every load — safe to call repeatedly
 		InputMap.action_erase_events(action)
-		
 		for key in inputs[action]:
 			var ev = InputEventKey.new()
 			ev.physical_keycode = key
 			InputMap.action_add_event(action, ev)
-			
-	# Also add mouse click to interact
+
 	var mouse_ev = InputEventMouseButton.new()
 	mouse_ev.button_index = MOUSE_BUTTON_LEFT
 	InputMap.action_add_event("interact", mouse_ev)
 
 func trigger_game_over(reason: String, tip: String):
+	if _game_over_triggered:
+		return
+	_game_over_triggered = true
 	game_over_reason = reason
 	game_over_tip = tip
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/game_over.tscn")
 
 func trigger_victory():
+	if _game_over_triggered:
+		return
+	_game_over_triggered = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/victory_screen.tscn")
+
+func save_best_score(score: int, time: float):
+	var existing = load_best_score()
+	var best_score = max(score, existing.get("score", 0))
+	var prev_time = existing.get("time", INF)
+	var best_time = time if prev_time == INF else min(time, prev_time)
+	var config = ConfigFile.new()
+	config.set_value("best", "score", best_score)
+	config.set_value("best", "time", best_time)
+	config.save("user://save.cfg")
+
+func load_best_score() -> Dictionary:
+	var config = ConfigFile.new()
+	if config.load("user://save.cfg") != OK:
+		return {}
+	return {
+		"score": config.get_value("best", "score", 0),
+		"time": config.get_value("best", "time", INF)
+	}

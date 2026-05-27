@@ -51,10 +51,16 @@ def add_sub(sid, type_name, props):
 # Node counter for unique parent paths
 def node(name, type_, parent, props=None, instance=None):
     """Emit a [node] block."""
-    if instance:
-        lines.append(f'[node name="{name}" parent="{parent}" instance=ExtResource("{instance}")]')
+    if parent == "" or parent is None:
+        if instance:
+            lines.append(f'[node name="{name}" instance=ExtResource("{instance}")]')
+        else:
+            lines.append(f'[node name="{name}" type="{type_}"]')
     else:
-        lines.append(f'[node name="{name}" type="{type_}" parent="{parent}"]')
+        if instance:
+            lines.append(f'[node name="{name}" parent="{parent}" instance=ExtResource("{instance}")]')
+        else:
+            lines.append(f'[node name="{name}" type="{type_}" parent="{parent}"]')
     if props:
         for p in props:
             lines.append(p)
@@ -156,7 +162,7 @@ ENV = add_sub("Env_1", "Environment", [
 
 # Collision shapes for doors
 SHP_DOOR_STD  = box_shape("Shp_DoorStd",   1.0, 2.0, 0.1)
-SHP_CABIN     = box_shape("Shp_Cabin",     2.0, 2.0, 1.4)
+SHP_CABIN     = box_shape("Shp_Cabin",     4.0, 2.0, 1.4)
 SHP_GUARD     = box_shape("Shp_Guard",     0.5, 1.6, 0.5)
 SHP_PHONE     = box_shape("Shp_Phone",     0.4, 1.6, 0.4)
 SHP_EXTINGUISH= box_shape("Shp_Extinguish",0.2, 0.6, 0.2)
@@ -209,10 +215,20 @@ def door_static(name, parent, px, py, pz,
                 door_mat=None, rot_y=0,
                 width=1.0, height=2.0):
     """Emit a StaticBody3D interactable door with CollisionShape and Mesh."""
+    import math
+    r = math.radians(rot_y)
+    c = round(math.cos(r), 8)
+    s = round(math.sin(r), 8)
+
+    # Calculate hinge position (left edge of the door)
+    hx = px - (width / 2.0) * c
+    hy = py
+    hz = pz + (width / 2.0) * s
+
     if rot_y != 0:
-        tf_str = tf_rot_y(rot_y, px, py, pz)
+        tf_str = tf_rot_y(rot_y, hx, hy, hz)
     else:
-        tf_str = tf(px, py, pz)
+        tf_str = tf(hx, hy, hz)
 
     props = [
         f'transform = {tf_str}',
@@ -245,11 +261,11 @@ def door_static(name, parent, px, py, pz,
     shp_sid = add_sub(f"Shp_{name}", "BoxShape3D", [f'size = Vector3({width}, {height}, 0.1)'])
 
     node(f"CollisionShape3D", "CollisionShape3D", f"{parent}/{name}", [
-        f'transform = {tf(0, height/2, 0)}',
+        f'transform = {tf(width/2.0, height/2.0, 0)}',
         f'shape = SubResource("{shp_sid}")',
     ])
     node("Mesh", "CSGBox3D", f"{parent}/{name}", [
-        f'transform = {tf(0, height/2, 0)}',
+        f'transform = {tf(width/2.0, height/2.0, 0)}',
         f'size = Vector3({width}, {height}, 0.1)',
         f'material = SubResource("{dmat}")',
     ])
@@ -283,7 +299,7 @@ def smoke_particle(name, parent, px, py, pz, col=(0.15,0.15,0.15,0.6),
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ROOT
-node("Level", "Node3D", ".", [])
+node("Level", "Node3D", "", [])
 
 # WorldEnvironment
 node("WorldEnvironment", "WorldEnvironment", ".", [
@@ -307,7 +323,7 @@ node("AlarmAudio", "AudioStreamPlayer", ".", [
 # Player (instanced from player.tscn)
 # Starts in master bedroom. teleport_target_pos = outside assembly point
 lines.append('[node name="Player" parent="." instance=ExtResource("1_player")]')
-lines.append(f'transform = {tf(-3, 0.1, -6)}')
+lines.append(f'transform = {tf(-2, 0.1, -5)}')
 lines.append('teleport_target_pos = Vector3(-8, -22.3, 22)')
 lines.append("")
 
@@ -322,133 +338,179 @@ G = "Geometry/Unit8A"
 # --- Master Bedroom ---
 node("MasterBedroom", "Node3D", G, [])
 MB = G + "/MasterBedroom"
-# Floor
-csg_box("Floor", MB, -3, -0.05, -5, 6, 0.1, 5, M_CARPET_MASTER)
-# Ceiling
-csg_box("Ceiling", MB, -3, 2.75, -5, 6, 0.1, 5, M_DRYWALL)
-# North wall (back)
-csg_box("WallNorth", MB, -3, 1.4, -7.6, 6, 2.8, 0.2, M_DRYWALL)
-# South wall (has door cutout toward living room) -- split around door
-csg_box("WallSouth_W", MB, -4.6, 1.4, -2.4, 2.8, 2.8, 0.2, M_DRYWALL)
-csg_box("WallSouth_E", MB, -0.9, 1.4, -2.4, 1.8, 2.8, 0.2, M_DRYWALL)
-csg_box("WallSouth_Top", MB, -3.0, 2.35, -2.4, 6.2, 0.9, 0.2, M_DRYWALL)
-# West wall
-csg_box("WallWest", MB, -6.1, 1.4, -5, 0.2, 2.8, 5.2, M_DRYWALL)
-# East wall (has door cutout to ensuite)
-csg_box("WallEast_N", MB, 0.0, 1.4, -6.3, 0.2, 2.8, 2.6, M_DRYWALL)
-csg_box("WallEast_S", MB, 0.0, 1.4, -3.1, 0.2, 2.8, 1.8, M_DRYWALL)
-csg_box("WallEast_Top", MB, 0.0, 2.4, -5.0, 0.2, 0.8, 5.2, M_DRYWALL)
+# Floor spans X = [-6.0, -1.0], Z = [-8.0, -4.0]
+csg_box("Floor", MB, -3.5, -0.05, -6.0, 5.0, 0.1, 4.0, M_CARPET_MASTER)
+# Ceiling spans X = [-6.0, -1.0], Z = [-8.0, -4.0]
+csg_box("Ceiling", MB, -3.5, 2.75, -6.0, 5.0, 0.1, 4.0, M_DRYWALL)
+# North wall spans X = [-6.0, -1.0] at Z = -8.1
+csg_box("WallNorth", MB, -3.5, 1.4, -8.1, 5.0, 2.8, 0.2, M_DRYWALL)
+# South wall spans X = [-4.5, -1.0] at Z = -3.9 (avoid Ensuite south wall overlap)
+csg_box("WallSouth", MB, -2.75, 1.4, -3.9, 3.5, 2.8, 0.2, M_DRYWALL)
+# West wall spans Z = [-8.0, -4.0] at X = -6.1
+csg_box("WallWest", MB, -6.1, 1.4, -6.0, 0.2, 2.8, 4.0, M_DRYWALL)
+# East wall at X = -1.0 (has door cutout at Z = [-5.0, -4.0])
+# North of the door: spans Z = [-8.0, -5.0] (length 3.0)
+csg_box("WallEast_N", MB, -1.0, 1.4, -6.5, 0.2, 2.8, 3.0, M_DRYWALL)
+# Above the door: spans Z = [-8.0, -4.0] (length 4.0)
+csg_box("WallEast_Top", MB, -1.0, 2.4, -6.0, 0.2, 0.8, 4.0, M_DRYWALL)
 
-# Props: bed, desk
-csg_box("Bed", MB, -3, 0.3, -6.2, 1.8, 0.6, 2.2, M_WOOD_PROP, collision=True)
-csg_box("BedMattress", MB, -3, 0.62, -6.2, 1.7, 0.15, 2.1, M_FABRIC, collision=False)
-csg_box("Desk", MB, -5.2, 0.4, -4, 1.2, 0.8, 2.0, M_WOOD_PROP)
-csg_box("Chair", MB, -4.5, 0.4, -4, 0.6, 0.8, 0.6, M_FABRIC)
+# Hallway (widened and centered at X=0)
+node("Hallway", "Node3D", G, [])
+HW = G + "/Hallway"
+# Floor spans X = [-1.0, 1.0], Z = [-8.0, -4.0]
+csg_box("Floor", HW, 0.0, -0.05, -6.0, 2.0, 0.1, 4.0, M_WOOD_FLOOR)
+# Ceiling spans X = [-1.0, 1.0], Z = [-8.0, -4.0]
+csg_box("Ceiling", HW, 0.0, 2.75, -6.0, 2.0, 0.1, 4.0, M_DRYWALL2)
+# North wall spans X = [-1.0, 1.0] at Z = -8.1
+csg_box("WallNorth", HW, 0.0, 1.4, -8.1, 2.0, 2.8, 0.2, M_DRYWALL2)
 
-# Bedroom door (east wall, leading to living room)
-door_static("BedroomDoor", G, -0.1, 0, -5,
+# Props in Master Bedroom
+csg_box("Bed", MB, -3.0, 0.3, -6.2, 1.8, 0.6, 2.2, M_WOOD_PROP, collision=True)
+csg_box("BedMattress", MB, -3.0, 0.62, -6.2, 1.7, 0.15, 2.1, M_FABRIC, collision=False)
+csg_box("Desk", MB, -5.2, 0.4, -4.8, 1.2, 0.8, 2.0, M_WOOD_PROP)
+csg_box("Chair", MB, -4.5, 0.4, -4.8, 0.6, 0.8, 0.6, M_FABRIC)
+
+# Bedroom door (on East wall at X = -1.0, spanning Z = [-5.0, -4.0])
+door_static("BedroomDoor", G, -1.0, 0, -4.5,
             is_hot=False, can_feel=True, open_angle=-90.0,
-            door_mat=M_WOOD_DOOR, rot_y=0)
+            door_mat=M_WOOD_DOOR, rot_y=90)
 
-# Light
-omni_light("BedroomLight", MB, -3, 2.5, -5, 1.5, color(1.0, 0.95, 0.85),
+# Master Bedroom Light
+omni_light("BedroomLight", MB, -3.5, 2.5, -6.0, 1.5, color(1.0, 0.95, 0.85),
            flicker=True, fl_min=1.2, fl_max=1.8, fl_speed=5.0)
 
 # --- Bedroom 2 ---
 node("Bedroom2", "Node3D", G, [])
 B2 = G + "/Bedroom2"
-csg_box("Floor", B2, 3, -0.05, -4, 4, 0.1, 4, M_CARPET_BED2)
-csg_box("Ceiling", B2, 3, 2.75, -4, 4, 0.1, 4, M_DRYWALL)
-csg_box("WallNorth", B2, 3, 1.4, -6.1, 4, 2.8, 0.2, M_DRYWALL)
-csg_box("WallSouth_W", B2, 1.9, 1.4, -2.0, 1.8, 2.8, 0.2, M_DRYWALL)
-csg_box("WallSouth_E", B2, 4.2, 1.4, -2.0, 1.6, 2.8, 0.2, M_DRYWALL)
-csg_box("WallSouth_Top", B2, 3, 2.4, -2.0, 4.2, 0.8, 0.2, M_DRYWALL)
-csg_box("WallWest", B2, 0.9, 1.4, -4, 0.2, 2.8, 4.2, M_DRYWALL)
-csg_box("WallEast", B2, 5.1, 1.4, -4, 0.2, 2.8, 4.2, M_DRYWALL)
-csg_box("Bed2", B2, 3, 0.3, -5.2, 1.6, 0.6, 2.0, M_WOOD_PROP)
-csg_box("Desk2", B2, 4.5, 0.4, -3.5, 1.0, 0.8, 1.6, M_WOOD_PROP)
+# Floor spans X = [1.0, 4.0], Z = [-8.0, -4.0]
+csg_box("Floor", B2, 2.5, -0.05, -6.0, 3.0, 0.1, 4.0, M_CARPET_BED2)
+# Ceiling spans X = [1.0, 4.0], Z = [-8.0, -4.0]
+csg_box("Ceiling", B2, 2.5, 2.75, -6.0, 3.0, 0.1, 4.0, M_DRYWALL)
+# North wall spans X = [1.0, 4.0] at Z = -8.1
+csg_box("WallNorth", B2, 2.5, 1.4, -8.1, 3.0, 2.8, 0.2, M_DRYWALL)
+# South wall spans X = [1.0, 4.0] at Z = -3.9 (with door cutout at X = [1.5, 2.5])
+# West of the door: spans X = [1.0, 1.5] (width 0.5)
+csg_box("WallSouth_W", B2, 1.25, 1.4, -3.9, 0.5, 2.8, 0.2, M_DRYWALL)
+# East of the door: spans X = [2.5, 4.0] (width 1.5)
+csg_box("WallSouth_E", B2, 3.25, 1.4, -3.9, 1.5, 2.8, 0.2, M_DRYWALL)
+# Above the door: spans X = [1.0, 4.0] (width 3.0)
+csg_box("WallSouth_Top", B2, 2.5, 2.4, -3.9, 3.0, 0.8, 0.2, M_DRYWALL)
+# West wall spans Z = [-8.0, -4.0] at X = 1.0 (separates from Hallway)
+csg_box("WallWest", B2, 1.0, 1.4, -6.0, 0.2, 2.8, 4.0, M_DRYWALL)
+# East wall at X = 4.0 (separates from Common Bathroom, has door cutout at Z = [-5.0, -4.0])
+# North of the door: spans Z = [-8.0, -5.0] (length 3.0)
+csg_box("WallEast_N", B2, 4.0, 1.4, -6.5, 0.2, 2.8, 3.0, M_DRYWALL)
+# Above the door: spans Z = [-8.0, -4.0] (length 4.0)
+csg_box("WallEast_Top", B2, 4.0, 2.4, -6.0, 0.2, 0.8, 4.0, M_DRYWALL)
 
-door_static("Bedroom2Door", G, 3, 0, -2.1,
+# Props in Bedroom 2
+csg_box("Bed2", B2, 2.5, 0.3, -6.2, 1.6, 0.6, 2.0, M_WOOD_PROP)
+csg_box("Desk2", B2, 3.5, 0.4, -4.8, 1.0, 0.8, 1.6, M_WOOD_PROP)
+
+# Bedroom 2 door (on South wall at Z = -4.0, centered at X = 2.0)
+door_static("Bedroom2Door", G, 2.0, 0, -4.0,
             is_hot=False, can_feel=True, open_angle=-90.0,
             door_mat=M_WOOD_DOOR)
 
-omni_light("Bedroom2Light", B2, 3, 2.5, -4, 1.4, color(1.0, 0.95, 0.85),
+# Bedroom 2 Light
+omni_light("Bedroom2Light", B2, 2.5, 2.5, -6.0, 1.4, color(1.0, 0.95, 0.85),
            flicker=True, fl_min=1.1, fl_max=1.6, fl_speed=5.0)
 
 # --- Common Bathroom ---
 node("CommonBathroom", "Node3D", G, [])
 CB = G + "/CommonBathroom"
-csg_box("Floor", CB, 5, -0.05, -4, 2, 0.1, 2, M_TILE_WHITE)
-csg_box("Ceiling", CB, 5, 2.75, -4, 2, 0.1, 2, M_TILE_WHITE)
-csg_box("WallNorth", CB, 5, 1.4, -5.1, 2, 2.8, 0.2, M_TILE_WHITE)
-csg_box("WallSouth", CB, 5, 1.4, -2.9, 2, 2.8, 0.2, M_TILE_WHITE)
-csg_box("WallEast", CB, 6.1, 1.4, -4, 0.2, 2.8, 2.2, M_TILE_WHITE)
-csg_box("WallWest_N", CB, 3.9, 1.4, -4.8, 0.2, 2.8, 0.6, M_TILE_WHITE)
-csg_box("WallWest_S", CB, 3.9, 1.4, -3.2, 0.2, 2.8, 0.8, M_TILE_WHITE)
-csg_box("WallWest_Top", CB, 3.9, 2.4, -4.0, 0.2, 0.8, 2.2, M_TILE_WHITE)
-csg_box("Toilet", CB, 5.5, 0.35, -4.7, 0.5, 0.7, 0.7, M_TILE_WHITE)
-csg_box("Sink", CB, 4.3, 0.8, -4.7, 0.4, 0.1, 0.5, M_TILE_WHITE)
+# Floor spans X = [4.0, 6.0], Z = [-8.0, -4.0]
+csg_box("Floor", CB, 5.0, -0.05, -6.0, 2.0, 0.1, 4.0, M_TILE_WHITE)
+# Ceiling spans X = [4.0, 6.0], Z = [-8.0, -4.0]
+csg_box("Ceiling", CB, 5.0, 2.75, -6.0, 2.0, 0.1, 4.0, M_TILE_WHITE)
+# North wall spans X = [4.0, 6.0] at Z = -8.1
+csg_box("WallNorth", CB, 5.0, 1.4, -8.1, 2.0, 2.8, 0.2, M_TILE_WHITE)
+# South wall spans X = [4.0, 6.0] at Z = -3.9
+csg_box("WallSouth", CB, 5.0, 1.4, -3.9, 2.0, 2.8, 0.2, M_TILE_WHITE)
+# East wall spans Z = [-8.0, -4.0] at X = 6.1
+csg_box("WallEast", CB, 6.1, 1.4, -6.0, 0.2, 2.8, 4.0, M_TILE_WHITE)
+# Props in Common Bathroom
+csg_box("Toilet", CB, 5.5, 0.35, -7.0, 0.5, 0.7, 0.7, M_TILE_WHITE)
+csg_box("Sink", CB, 4.5, 0.8, -7.0, 0.4, 0.1, 0.5, M_TILE_WHITE)
 
-door_static("BathroomDoor", G, 4.0, 0, -4,
+# Bathroom door (on West wall at X = 4.0, spanning Z = [-5.0, -4.0])
+door_static("BathroomDoor", G, 4.0, 0, -4.5,
             is_hot=False, can_feel=False, open_angle=90.0,
             door_mat=M_WOOD_DOOR, rot_y=90)
 
-omni_light("BathroomLight", CB, 5, 2.5, -4, 1.5, color(1.0, 1.0, 1.0),
+# Bathroom Light
+omni_light("BathroomLight", CB, 5.0, 2.5, -6.0, 1.5, color(1.0, 1.0, 1.0),
            flicker=True, fl_min=1.2, fl_max=1.6, fl_speed=6.0)
 
 # --- En Suite ---
 node("EnsuiteBath", "Node3D", G, [])
 ES = G + "/EnsuiteBath"
-csg_box("Floor", ES, -5.5, -0.05, -3.5, 2, 0.1, 2, M_TILE_WHITE)
-csg_box("Ceiling", ES, -5.5, 2.75, -3.5, 2, 0.1, 2, M_TILE_WHITE)
-csg_box("WallNorth", ES, -5.5, 1.4, -4.6, 2, 2.8, 0.2, M_TILE_WHITE)
-csg_box("WallSouth", ES, -5.5, 1.4, -2.4, 2, 2.8, 0.2, M_TILE_WHITE)
-csg_box("WallWest", ES, -6.6, 1.4, -3.5, 0.2, 2.8, 2.2, M_TILE_WHITE)
-csg_box("WallEast_N", ES, -4.4, 1.4, -4.2, 0.2, 2.8, 0.8, M_TILE_WHITE)
-csg_box("WallEast_S", ES, -4.4, 1.4, -2.7, 0.2, 2.8, 0.8, M_TILE_WHITE)
-csg_box("WallEast_Top", ES, -4.4, 2.4, -3.5, 0.2, 0.8, 2.2, M_TILE_WHITE)
+# Floor spans X = [-6.0, -4.5], Z = [-6.0, -4.0] (inside Master Bedroom)
+csg_box("Floor", ES, -5.25, -0.05, -5.0, 1.5, 0.1, 2.0, M_TILE_WHITE)
+# Ceiling spans X = [-6.0, -4.5], Z = [-6.0, -4.0] (inside Master Bedroom)
+csg_box("Ceiling", ES, -5.25, 2.75, -5.0, 1.5, 0.1, 2.0, M_TILE_WHITE)
+# North wall spans X = [-6.0, -4.5] at Z = -6.1
+csg_box("WallNorth", ES, -5.25, 1.4, -6.1, 1.5, 2.8, 0.2, M_TILE_WHITE)
+# South wall spans X = [-6.0, -4.5] at Z = -3.9
+csg_box("WallSouth", ES, -5.25, 1.4, -3.9, 1.5, 2.8, 0.2, M_TILE_WHITE)
+# East wall at X = -4.5 (has door cutout at Z = [-5.0, -4.0])
+# North of the door: spans Z = [-6.0, -5.0] (length 1.0)
+csg_box("WallEast_N", ES, -4.5, 1.4, -5.5, 0.2, 2.8, 1.0, M_TILE_WHITE)
+# Above the door: spans Z = [-6.0, -4.0] (length 2.0)
+csg_box("WallEast_Top", ES, -4.5, 2.4, -5.0, 0.2, 0.8, 2.0, M_TILE_WHITE)
 
-door_static("EnsuiteDoor", G, -4.5, 0, -3.5,
+# Ensuite door (on East wall at X = -4.5, spanning Z = [-5.0, -4.0])
+door_static("EnsuiteDoor", G, -4.5, 0, -4.5,
             is_hot=False, can_feel=False, open_angle=90.0,
             door_mat=M_WOOD_DOOR, rot_y=90)
 
-omni_light("EnsuiteLight", ES, -5.5, 2.5, -3.5, 1.5, color(1.0, 1.0, 1.0),
+# Ensuite Light
+omni_light("EnsuiteLight", ES, -5.25, 2.5, -5.0, 1.5, color(1.0, 1.0, 1.0),
            flicker=True, fl_min=1.2, fl_max=1.6, fl_speed=6.0)
 
 # --- Living / Dining ---
 node("LivingDining", "Node3D", G, [])
 LV = G + "/LivingDining"
-csg_box("Floor", LV, 0, -0.05, -2, 8, 0.1, 4, M_WOOD_FLOOR)
-csg_box("Ceiling", LV, 0, 2.75, -2, 8, 0.1, 4, M_DRYWALL2)
-# Walls: north (connects to bedrooms), south (unit front wall), east (kitchen), west (utility)
-csg_box("WallNorth_W", LV, -3.0, 1.4, -4.05, 2.2, 2.8, 0.2, M_DRYWALL2)
-csg_box("WallNorth_E", LV, 2.8, 1.4, -4.05, 2.4, 2.8, 0.2, M_DRYWALL2)
-csg_box("WallNorth_Top", LV, 0, 2.35, -4.05, 8.2, 0.9, 0.2, M_DRYWALL2)
-# South wall with front door cutout
-csg_box("WallSouth_W", LV, -3.5, 1.4, 0.1, 3.0, 2.8, 0.2, M_DRYWALL2)
-csg_box("WallSouth_E", LV, 3.5, 1.4, 0.1, 3.0, 2.8, 0.2, M_DRYWALL2)
-csg_box("WallSouth_Top", LV, 0, 2.35, 0.1, 8.2, 0.9, 0.2, M_DRYWALL2)
-# East wall (kitchen side), with kitchen door cutout
-csg_box("WallEast_N", LV, 4.1, 1.4, -3.5, 0.2, 2.8, 1.2, M_DRYWALL2)
-csg_box("WallEast_S", LV, 4.1, 1.4, -0.7, 0.2, 2.8, 1.6, M_DRYWALL2)
-csg_box("WallEast_Top", LV, 4.1, 2.4, -2.0, 0.2, 0.8, 4.2, M_DRYWALL2)
-# West wall with utility door cutout
-csg_box("WallWest_N", LV, -4.1, 1.4, -3.5, 0.2, 2.8, 1.2, M_DRYWALL2)
-csg_box("WallWest_S", LV, -4.1, 1.4, -0.7, 0.2, 2.8, 1.6, M_DRYWALL2)
-csg_box("WallWest_Top", LV, -4.1, 2.4, -2.0, 0.2, 0.8, 4.2, M_DRYWALL2)
-# Props
-csg_box("Sofa", LV, -2, 0.4, -2.5, 2.4, 0.8, 1.0, M_FABRIC)
-csg_box("SofaBack", LV, -2, 0.95, -3.1, 2.4, 0.5, 0.2, M_FABRIC)
-csg_box("DiningTable", LV, 2, 0.4, -1.5, 2.0, 0.8, 1.2, M_WOOD_PROP)
-csg_box("TVUnit", LV, -3.8, 0.3, -3.8, 1.6, 0.6, 0.6, M_WOOD_PROP)
-csg_box("TVScreen", LV, -3.8, 0.95, -3.85, 1.2, 0.7, 0.1, M_CHARRED)
+# Floor spans X = [-3.5, 2.5], Z = [-4.0, 0.0]
+csg_box("Floor", LV, -0.5, -0.05, -2.0, 6.0, 0.1, 4.0, M_WOOD_FLOOR)
+# Ceiling spans X = [-3.5, 2.5], Z = [-4.0, 0.0]
+csg_box("Ceiling", LV, -0.5, 2.75, -2.0, 6.0, 0.1, 4.0, M_DRYWALL2)
+# South wall with front door cutout at X = [-0.5, 0.5] and balcony door cutout at X = [1.15, 2.15]
+# Left of front door: spans X = [-3.5, -0.8] (width 2.7)
+csg_box("WallSouth_W", LV, -2.15, 1.4, 0.0, 2.7, 2.8, 0.2, M_DRYWALL2)
+# Small segment west of front door: spans X = [-0.8, -0.5] (width 0.3)
+csg_box("WallSouth_Foyer_W", LV, -0.65, 1.4, 0.0, 0.3, 2.8, 0.2, M_DRYWALL2)
+# Small segment east of front door: spans X = [0.5, 0.8] (width 0.3)
+csg_box("WallSouth_Foyer_E", LV, 0.65, 1.4, 0.0, 0.3, 2.8, 0.2, M_DRYWALL2)
+# Small segment between Foyer and Balcony door: spans X = [0.8, 1.15] (width 0.35)
+csg_box("WallSouth_Balcony_W", LV, 0.975, 1.4, 0.0, 0.35, 2.8, 0.2, M_DRYWALL2)
+# Small segment east of Balcony door: spans X = [2.15, 2.5] (width 0.35)
+csg_box("WallSouth_Balcony_E", LV, 2.325, 1.4, 0.0, 0.35, 2.8, 0.2, M_DRYWALL2)
+# Above doors: spans X = [-3.5, 2.5] (width 6.0)
+csg_box("WallSouth_Top", LV, -0.5, 2.4, 0.0, 6.0, 0.8, 0.2, M_DRYWALL2)
 
-omni_light("LivingLight", LV, 0, 2.5, -2, 1.6, color(1.0, 0.95, 0.88),
+# Balcony door (leads to Balcony, at Z = 0.0, centered at X = 1.65)
+door_static("BalconyDoor", G, 1.65, 0, 0.0,
+            is_hot=False, can_feel=False, open_angle=90.0,
+            door_mat=M_WOOD_DOOR)
+
+# Props in Living Room
+# Sofa placed against the west wall (X = -3.5) and facing north (towards TV unit at Z = -4.0)
+# Centered at X = -2.3, leaving hallway exit (X > -1.0) completely clear
+csg_box("Sofa", LV, -2.3, 0.4, -2.0, 2.0, 0.8, 0.8, M_FABRIC)
+csg_box("SofaBack", LV, -2.3, 0.95, -1.5, 2.0, 0.5, 0.2, M_FABRIC)
+csg_box("DiningTable", LV, 1.0, 0.4, -1.5, 1.6, 0.8, 1.0, M_WOOD_PROP)
+# TV Unit against the north wall (Z = -4.0)
+csg_box("TVUnit", LV, -2.3, 0.3, -3.8, 1.8, 0.6, 0.4, M_WOOD_PROP)
+csg_box("TVScreen", LV, -2.3, 0.95, -3.9, 1.2, 0.7, 0.1, M_CHARRED)
+
+# Living Room Light
+omni_light("LivingLight", LV, -0.5, 2.5, -2.0, 1.6, color(1.0, 0.95, 0.88),
            flicker=True, fl_min=1.3, fl_max=1.8, fl_speed=4.0)
 
 # Fire extinguisher in living room
 node("FireExtinguisher", "StaticBody3D", G, [
-    f'transform = {tf(-3.8, 0.8, -0.5)}',
+    f'transform = {tf(-2.8, 0.8, -0.5)}',
     'collision_layer = 2',
     f'script = ExtResource("2_interactable")',
     'prompt_message = "Fire extinguisher — [E] Use (PASS method: Pull, Aim, Squeeze, Sweep)"',
@@ -461,53 +523,61 @@ node("CollisionShape3D", "CollisionShape3D", G + "/FireExtinguisher", [
 node("Mesh", "CSGBox3D", G + "/FireExtinguisher", [
     f'transform = {tf(0, 0.3, 0)}',
     f'size = Vector3(0.2, 0.6, 0.2)',
-    f'material = SubResource("{M_PHONE_BOX}")',  # red cylinder-ish
+    f'material = SubResource("{M_PHONE_BOX}")',
 ])
 
-# Unit Front Door
-door_static("UnitFrontDoor", G, 0, 0, 0.1,
+# Unit Front Door (at Z = 0.0, centered at X = 0.0)
+door_static("UnitFrontDoor", G, 0.0, 0, 0.0,
             is_hot=False, can_feel=True, open_angle=90.0,
             door_mat=M_WOOD_DOOR)
 
-# Kitchen door
-door_static("KitchenDoor", G, 2.0, 0, -2,
+# Kitchen door (on East wall of Living Room at X = 2.5, spanning Z = [-2.5, -1.5])
+door_static("KitchenDoor", G, 2.5, 0, -2.0,
             is_hot=True, can_feel=True, open_angle=90.0,
             door_mat=M_WOOD_DOOR, rot_y=90)
 
-# Utility door
-door_static("UtilityDoor", G, -2.5, 0, -1.5,
+# Utility door (on West wall of Living Room at X = -3.5, spanning Z = [-2.5, -1.5])
+door_static("UtilityDoor", G, -3.5, 0, -2.0,
             is_hot=False, can_feel=False, open_angle=90.0,
             door_mat=M_WOOD_DOOR, rot_y=90)
 
 # --- Kitchen (fire room) ---
 node("Kitchen", "Node3D", G, [])
 KT = G + "/Kitchen"
-csg_box("Floor", KT, 4, -0.05, -2, 4, 0.1, 4, M_KITCHEN_FLOOR)
-csg_box("Ceiling", KT, 4, 2.75, -2, 4, 0.1, 4, M_CHARRED)
-csg_box("WallNorth", KT, 4, 1.4, -4.1, 4, 2.8, 0.2, M_CHARRED)
-csg_box("WallSouth", KT, 4, 1.4, 0.1, 4, 2.8, 0.2, M_CHARRED)
-csg_box("WallEast", KT, 6.1, 1.4, -2, 0.2, 2.8, 4.2, M_CHARRED)
-csg_box("WallWest_N", KT, 1.9, 1.4, -3.5, 0.2, 2.8, 1.2, M_CHARRED)
-csg_box("WallWest_S", KT, 1.9, 1.4, -0.7, 0.2, 2.8, 1.6, M_CHARRED)
-csg_box("WallWest_Top", KT, 1.9, 2.4, -2, 0.2, 0.8, 4.2, M_CHARRED)
-csg_box("Counter", KT, 5.5, 0.9, -2.5, 1.0, 0.9, 3.0, M_CHARRED)
+# Floor spans X = [2.5, 6.0], Z = [-4.0, 0.0]
+csg_box("Floor", KT, 4.25, -0.05, -2.0, 3.5, 0.1, 4.0, M_KITCHEN_FLOOR)
+# Ceiling spans X = [2.5, 6.0], Z = [-4.0, 0.0]
+csg_box("Ceiling", KT, 4.25, 2.75, -2.0, 3.5, 0.1, 4.0, M_CHARRED)
+# South wall spans X = [2.5, 6.0] at Z = 0.1
+csg_box("WallSouth", KT, 4.25, 1.4, 0.1, 3.5, 2.8, 0.2, M_CHARRED)
+# East wall spans Z = [-4.0, 0.0] at X = 6.1
+csg_box("WallEast", KT, 6.1, 1.4, -2.0, 0.2, 2.8, 4.0, M_CHARRED)
+# Kitchen Counter
+csg_box("Counter", KT, 5.0, 0.9, -2.0, 1.0, 0.9, 3.0, M_CHARRED)
 
-omni_light("FireGlow", KT, 4, 1.5, -2, 5.0, color(1.0, 0.3, 0.0),
+# West wall at X = 2.5 (separates from Living Room, has door cutout at Z = [-2.5, -1.5])
+# North of the door: spans Z = [-4.0, -2.5] (length 1.5)
+csg_box("WallWest_N", KT, 2.5, 1.4, -3.25, 0.2, 2.8, 1.5, M_DRYWALL)
+# South of the door: spans Z = [-1.5, 0.0] (length 1.5)
+csg_box("WallWest_S", KT, 2.5, 1.4, -0.75, 0.2, 2.8, 1.5, M_DRYWALL)
+# Above the door: spans Z = [-4.0, 0.0] (length 4.0)
+csg_box("WallWest_Top", KT, 2.5, 2.4, -2.0, 0.2, 0.8, 4.0, M_DRYWALL)
+
+# Fire Glow & Audio
+omni_light("FireGlow", KT, 4.25, 1.5, -2.0, 5.0, color(1.0, 0.3, 0.0),
            flicker=True, fl_min=3.0, fl_max=7.0, fl_speed=20.0, shadow=True, omni_range=8.0)
 omni_light("FireGlow2", KT, 4.5, 0.8, -1.5, 3.5, color(1.0, 0.4, 0.0),
            flicker=True, fl_min=2.0, fl_max=5.0, fl_speed=18.0)
 
-# Fire particles
-smoke_particle("FireParticle1", KT, 3.5, 0.5, -2, is_fire=True)
-smoke_particle("FireParticle2", KT, 4.0, 0.5, -2.5, is_fire=True)
+smoke_particle("FireParticle1", KT, 3.5, 0.5, -2.0, is_fire=True)
+smoke_particle("FireParticle2", KT, 4.25, 0.5, -2.5, is_fire=True)
 smoke_particle("FireParticle3", KT, 4.5, 0.5, -1.5, is_fire=True)
-# Smoke particles
-smoke_particle("SmokeParticle1", KT, 3.5, 2.5, -2, col=(0.15,0.15,0.15,0.6), vel=0.5, lifetime=3.0)
-smoke_particle("SmokeParticle2", KT, 4.5, 2.5, -2.5, col=(0.12,0.12,0.12,0.55), vel=0.4, lifetime=3.5)
 
-# Fire crackle audio
+smoke_particle("SmokeParticle1", KT, 3.5, 2.5, -2.0)
+smoke_particle("SmokeParticle2", KT, 4.5, 2.5, -2.5)
+
 node("FireCrackle", "AudioStreamPlayer3D", KT, [
-    f'transform = {tf(4, 1.0, -2)}',
+    f'transform = {tf(4.25, 1.0, -2.0)}',
     'max_distance = 12.0',
     f'script = ExtResource("6_synth_audio_3d")',
     'synth_type = "fire_crackle"',
@@ -516,28 +586,46 @@ node("FireCrackle", "AudioStreamPlayer3D", KT, [
 # --- Utility ---
 node("Utility", "Node3D", G, [])
 UT = G + "/Utility"
-csg_box("Floor", UT, -4, -0.05, -2, 3, 0.1, 3, M_CONCRETE)
-csg_box("Ceiling", UT, -4, 2.75, -2, 3, 0.1, 3, M_DRYWALL)
-csg_box("WallNorth", UT, -4, 1.4, -3.6, 3, 2.8, 0.2, M_DRYWALL)
-csg_box("WallSouth", UT, -4, 1.4, -0.4, 3, 2.8, 0.2, M_DRYWALL)
-csg_box("WallWest", UT, -5.6, 1.4, -2, 0.2, 2.8, 3.2, M_DRYWALL)
-csg_box("WallEast_N", UT, -2.4, 1.4, -3.3, 0.2, 2.8, 0.6, M_DRYWALL)
-csg_box("WallEast_S", UT, -2.4, 1.4, -0.8, 0.2, 2.8, 0.8, M_DRYWALL)
-csg_box("WallEast_Top", UT, -2.4, 2.4, -2, 0.2, 0.8, 3.2, M_DRYWALL)
-omni_light("UtilityLight", UT, -4, 2.5, -2, 0.8, color(0.9, 0.9, 1.0),
+# Floor spans X = [-6.0, -3.5], Z = [-4.0, 0.0]
+csg_box("Floor", UT, -4.75, -0.05, -2.0, 2.5, 0.1, 4.0, M_CONCRETE)
+# Ceiling spans X = [-6.0, -3.5], Z = [-4.0, 0.0]
+csg_box("Ceiling", UT, -4.75, 2.75, -2.0, 2.5, 0.1, 4.0, M_DRYWALL)
+# South wall spans X = [-6.0, -3.5] at Z = 0.1
+csg_box("WallSouth", UT, -4.75, 1.4, 0.1, 2.5, 2.8, 0.2, M_DRYWALL)
+# West wall spans Z = [-4.0, 0.0] at X = -6.1
+csg_box("WallWest", UT, -6.1, 1.4, -2.0, 0.2, 2.8, 4.0, M_DRYWALL)
+
+omni_light("UtilityLight", UT, -4.75, 2.5, -2.0, 0.8, color(0.9, 0.9, 1.0),
            flicker=True, fl_min=0.6, fl_max=1.0, fl_speed=5.0)
+
+# East wall at X = -3.5 (separates from Living Room, has door cutout at Z = [-2.5, -1.5])
+# North of the door: spans Z = [-4.0, -2.5] (length 1.5)
+csg_box("WallEast_N", UT, -3.5, 1.4, -3.25, 0.2, 2.8, 1.5, M_DRYWALL)
+# South of the door: spans Z = [-1.5, 0.0] (length 1.5)
+csg_box("WallEast_S", UT, -3.5, 1.4, -0.75, 0.2, 2.8, 1.5, M_DRYWALL)
+# Above the door: spans Z = [-4.0, 0.0] (length 4.0)
+csg_box("WallEast_Top", UT, -3.5, 2.4, -2.0, 0.2, 0.8, 4.0, M_DRYWALL)
+
+# --- Foyer ---
+node("Foyer", "Node3D", G, [])
+FY = G + "/Foyer"
+csg_box("Floor", FY, 0.0, -0.05, 1.0, 1.6, 0.1, 2.0, M_WOOD_FLOOR)
+csg_box("Ceiling", FY, 0.0, 2.75, 1.0, 1.6, 0.1, 2.0, M_DRYWALL2)
+csg_box("WallWest", FY, -0.9, 1.4, 1.0, 0.2, 2.8, 2.0, M_DRYWALL2)
+csg_box("WallEast", FY, 0.9, 1.4, 1.0, 0.2, 2.8, 2.0, M_DRYWALL2)
 
 # --- Balcony ---
 node("Balcony", "Node3D", G, [])
 BL = G + "/Balcony"
-csg_box("Floor", BL, 4, -0.05, 0.5, 4, 0.1, 2, M_OUTDOOR_TILE)
-# Railings (3 sides, no north as it connects to living room)
-csg_box("RailSouth", BL, 4, 0.5, 1.6, 4.2, 1.0, 0.1, M_RAILING, collision=True)
-csg_box("RailEast", BL, 6.1, 0.5, 0.5, 0.1, 1.0, 2.2, M_RAILING, collision=True)
-csg_box("RailWest", BL, 1.9, 0.5, 0.5, 0.1, 1.0, 2.2, M_RAILING, collision=True)
+# Floor spans X = [0.8, 2.5], Z = [0.0, 2.0] (south of living room, east of foyer)
+csg_box("Floor", BL, 1.65, -0.05, 1.0, 1.7, 0.1, 2.0, M_OUTDOOR_TILE)
+# Railings (south and east)
+csg_box("RailSouth", BL, 1.65, 0.5, 2.05, 1.7, 1.0, 0.1, M_RAILING, collision=True)
+csg_box("RailEast", BL, 2.55, 0.5, 1.0, 0.1, 1.0, 2.0, M_RAILING, collision=True)
+
 # Warning sign prop
 node("BalconySign", "StaticBody3D", G, [
-    f'transform = {tf(4, 1.5, 1.7)}',
+    f'transform = {tf(1.65, 1.5, 2.05)}',
     'collision_layer = 2',
     f'script = ExtResource("2_interactable")',
     'prompt_message = "Do not jump — assembly point is 8 floors below. Use the fire stairwell!"',
@@ -552,14 +640,20 @@ node("Mesh", "CSGBox3D", G + "/BalconySign", [
 node("SharedCorridor", "Node3D", "Geometry", [])
 SC = "Geometry/SharedCorridor"
 
-csg_box("CorridorFloor", SC, 3, -0.05, 1.5, 24, 0.1, 2.8, M_CARPET_CORRIDOR)
-csg_box("CorridorCeiling", SC, 3, 2.85, 1.5, 24, 0.1, 2.8, M_DRYWALL)
-csg_box("WallNorth", SC, 3, 1.4, 0.1, 24, 2.8, 0.2, M_DRYWALL)
-csg_box("WallSouth", SC, 3, 1.4, 2.9, 24, 2.8, 0.2, M_DRYWALL)
+csg_box("CorridorFloor", SC, 2.25, -0.05, 3.4, 22.5, 0.1, 2.8, M_CARPET_CORRIDOR)
+csg_box("CorridorCeiling", SC, 2.25, 2.85, 3.4, 22.5, 0.1, 2.8, M_DRYWALL)
+
+# North wall split around foyer opening (X = [-0.8, 0.8])
+# West segment: X = [-9.0, -0.8] (width 8.2)
+csg_box("WallNorth_W", SC, -4.9, 1.4, 2.0, 8.2, 2.8, 0.2, M_DRYWALL)
+# East segment: X = [0.8, 13.5] (width 12.7)
+csg_box("WallNorth_E", SC, 7.15, 1.4, 2.0, 12.7, 2.8, 0.2, M_DRYWALL)
+
+csg_box("WallSouth", SC, 2.25, 1.4, 4.8, 22.5, 2.8, 0.2, M_DRYWALL)
 
 # Smoke Area (covers corridor)
 node("SmokeArea", "Area3D", SC, [
-    f'transform = {tf(3, 1.25, 1.5)}',
+    f'transform = {tf(3, 1.25, 3.4)}',
     'collision_mask = 1',
     f'script = ExtResource("3_smoke_area")',
 ])
@@ -568,23 +662,23 @@ node("CollisionShape3D", "CollisionShape3D", f"{SC}/SmokeArea", [
     f'shape = SubResource("{shp_smoke}")',
 ])
 # Smoke particles in corridor
-smoke_particle("CorridorSmoke1", SC, -1, 1.5, 1.5, col=(0.18,0.15,0.12,0.4), vel=0.25, spread=60, lifetime=4.0)
-smoke_particle("CorridorSmoke2", SC, 5,  1.5, 1.5, col=(0.15,0.13,0.10,0.35), vel=0.2, spread=55, lifetime=4.5)
-smoke_particle("CorridorSmoke3", SC, 10, 1.5, 1.5, col=(0.16,0.14,0.11,0.3), vel=0.2, spread=50, lifetime=4.0)
+smoke_particle("CorridorSmoke1", SC, -1, 1.5, 3.4, col=(0.18,0.15,0.12,0.4), vel=0.25, spread=60, lifetime=4.0)
+smoke_particle("CorridorSmoke2", SC, 5,  1.5, 3.4, col=(0.15,0.13,0.10,0.35), vel=0.2, spread=55, lifetime=4.5)
+smoke_particle("CorridorSmoke3", SC, 10, 1.5, 3.4, col=(0.16,0.14,0.11,0.3), vel=0.2, spread=50, lifetime=4.0)
 
 # Corridor lights (emergency green flicker)
 for i, cx in enumerate([-1, 5, 10]):
-    omni_light(f"CorrLight_{i+1}", SC, cx, 2.7, 1.5, 0.5,
+    omni_light(f"CorrLight_{i+1}", SC, cx, 2.7, 3.4, 0.5,
                color(0.9, 1.0, 0.9), flicker=True, fl_min=0.4, fl_max=0.6, fl_speed=3.0)
 
 # Exit signs on ceiling
 node("ExitSigns", "Node3D", SC, [])
 for i, cx in enumerate([0, 5, 10]):
-    csg_box(f"ExitSign_{i+1}", f"{SC}/ExitSigns", cx, 2.82, 1.5, 0.6, 0.3, 0.05, M_EXIT_SIGN, collision=False)
+    csg_box(f"ExitSign_{i+1}", f"{SC}/ExitSigns", cx, 2.82, 3.4, 0.6, 0.3, 0.05, M_EXIT_SIGN, collision=False)
 
 # Corridor extinguisher (south wall)
 node("CorridorExtinguisher", "StaticBody3D", SC, [
-    f'transform = {tf(-2, 0.8, 2.7)}',
+    f'transform = {tf(-2, 0.8, 4.6)}',
     'collision_layer = 2',
     f'script = ExtResource("2_interactable")',
     'prompt_message = "[E] Fire extinguisher — Pull pin, Aim low, Squeeze, Sweep side to side"',
@@ -600,45 +694,62 @@ node("Mesh", "CSGBox3D", f"{SC}/CorridorExtinguisher", [
     f'material = SubResource("{M_PHONE_BOX}")',
 ])
 
-# Decorative unit doors along north corridor wall
-unit_door_positions = [(-1,0,0.1), (1,0,0.1), (3,0,0.1), (5,0,0.1), (7,0,0.1), (9,0,0.1)]
-unit_door_names = ["Unit8A_CorridorDoor","Unit8B_CorridorDoor","Unit8C_CorridorDoor",
-                   "Unit8D_CorridorDoor","Unit8E_CorridorDoor","Unit8F_CorridorDoor"]
-for i, (dx, dy, dz) in enumerate(unit_door_positions):
-    is_locked = (i > 0)  # only first is player's
-    door_static(unit_door_names[i], SC, dx, dy, dz,
-                is_door=not is_locked, is_locked=is_locked,
-                can_feel=(i==0), open_angle=90.0, door_mat=M_WOOD_DOOR,
-                prompt="" if i == 0 else f"Unit {chr(65+i+7)+str(8)} — locked")
+# Decorative unit doors for other units along north corridor wall (placed at X=8.0 and X=11.0, outside Unit 8A)
+door_static("Unit8B_CorridorDoor", SC, 8.0, 0, 2.0,
+            is_door=False, is_locked=True, can_feel=False,
+            open_angle=90.0, door_mat=M_WOOD_DOOR,
+            prompt="Unit 8B — locked")
+
+door_static("Unit8C_CorridorDoor", SC, 11.0, 0, 2.0,
+            is_door=False, is_locked=True, can_feel=False,
+            open_angle=90.0, door_mat=M_WOOD_DOOR,
+            prompt="Unit 8C — locked")
 
 # ── ELEVATOR LOBBY ───────────────────────────────────────────────────────────
 node("ElevatorLobby", "Node3D", "Geometry", [])
 EL = "Geometry/ElevatorLobby"
 
-csg_box("LobbyFloor", EL, 16, -0.05, 1.5, 5, 0.1, 5, M_MARBLE)
-csg_box("LobbyCeiling", EL, 16, 2.85, 1.5, 5, 0.1, 5, M_DRYWALL)
-csg_box("LobbyWallNorth", EL, 16, 1.4, -0.6, 5, 2.8, 0.2, M_DRYWALL)
-csg_box("LobbyWallSouth", EL, 16, 1.4, 4.1, 5, 2.8, 0.2, M_DRYWALL)
-csg_box("LobbyWallEast", EL, 19.1, 1.4, 1.5, 0.2, 2.8, 5, M_DRYWALL)
+csg_box("LobbyFloor", EL, 16.25, -0.05, 3.3, 5.5, 0.1, 5.0, M_MARBLE)
+csg_box("LobbyCeiling", EL, 16.25, 2.85, 3.3, 5.5, 0.1, 5.0, M_DRYWALL)
+csg_box("LobbyWallNorth", EL, 16.25, 1.4, 0.7, 5.5, 2.8, 0.2, M_DRYWALL)
+csg_box("LobbyWallEast", EL, 19.1, 1.4, 3.3, 0.2, 2.8, 5.0, M_DRYWALL)
 
-omni_light("LobbyLight", EL, 16, 2.5, 1.5, 1.2, color(0.92, 0.95, 0.92),
+# West walls to seal lobby side voids around corridor opening
+csg_box("LobbyWallWest_N", EL, 13.4, 1.4, 1.4, 0.2, 2.8, 1.2, M_DRYWALL)
+csg_box("LobbyWallWest_S", EL, 13.4, 1.4, 5.3, 0.2, 2.8, 1.0, M_DRYWALL)
+
+# Split LobbyWallSouth around Lift A and Lift B doors (at X=16.0 and X=18.0, width 1.2m each)
+csg_box("LobbyWallSouth_Left", EL, 14.45, 1.4, 5.9, 1.9, 2.8, 0.2, M_DRYWALL)
+csg_box("LobbyWallSouth_Mid", EL, 17.0, 1.4, 5.9, 0.8, 2.8, 0.2, M_DRYWALL)
+csg_box("LobbyWallSouth_Right", EL, 18.8, 1.4, 5.9, 0.4, 2.8, 0.2, M_DRYWALL)
+csg_box("LobbyWallSouth_Top", EL, 16.25, 2.4, 5.9, 5.5, 0.8, 0.2, M_DRYWALL)
+
+# Lift Cabin floors and enclosure walls
+csg_box("LiftFloor", EL, 17.0, -0.05, 6.6, 4.0, 0.1, 1.6, M_MARBLE)
+csg_box("LiftCeiling", EL, 17.0, 2.85, 6.6, 4.0, 0.1, 1.6, M_DRYWALL)
+csg_box("LiftWallBack", EL, 17.0, 1.4, 7.5, 4.4, 2.8, 0.2, M_DRYWALL)
+csg_box("LiftWallLeft", EL, 14.9, 1.4, 6.6, 0.2, 2.8, 1.6, M_DRYWALL)
+csg_box("LiftWallRight", EL, 19.1, 1.4, 6.6, 0.2, 2.8, 1.6, M_DRYWALL)
+csg_box("LiftWallDivider", EL, 17.0, 1.4, 6.6, 0.2, 2.8, 1.6, M_DRYWALL)
+
+omni_light("LobbyLight", EL, 16, 2.5, 3.3, 1.2, color(0.92, 0.95, 0.92),
            flicker=True, fl_min=0.9, fl_max=1.3, fl_speed=4.0)
 
 # Lift A
-door_static("LiftA", EL, 16, 0, 4.0,
+door_static("LiftA", EL, 16.0, 0, 5.9,
             is_lift=True, is_door=False, can_feel=False,
             door_mat=M_LIFT_DOOR, width=1.2, height=2.0,
             prompt="[E] Press lift button — DANGER during fire!")
 
 # Lift B  
-door_static("LiftB", EL, 18, 0, 4.0,
+door_static("LiftB", EL, 18.0, 0, 5.9,
             is_lift=True, is_door=False, can_feel=False,
             door_mat=M_LIFT_DOOR, width=1.2, height=2.0,
             prompt="[E] Press lift button — DANGER during fire!")
 
 # Elevator cabin area (trigger)
 node("ElevatorCabinArea", "Area3D", EL, [
-    f'transform = {tf(17, 1.0, 4.8)}',
+    f'transform = {tf(17, 1.0, 6.6)}',
     'collision_mask = 1',
     f'script = ExtResource("7_elevator")',
 ])
@@ -647,96 +758,110 @@ node("CollisionShape3D", "CollisionShape3D", f"{EL}/ElevatorCabinArea", [
 ])
 
 # Warning sign
-csg_box("WarnSign", EL, 19.2, 1.8, 3.5, 0.8, 0.4, 0.05, M_WARN_SIGN, collision=False)
+csg_box("WarnSign", EL, 19.2, 1.8, 4.5, 0.8, 0.4, 0.05, M_WARN_SIGN, collision=False)
 
 # Lobby hum audio
 node("ElevatorHum", "AudioStreamPlayer3D", EL, [
-    f'transform = {tf(16, 1.5, 3.5)}',
+    f'transform = {tf(16, 1.5, 4.5)}',
     'max_distance = 6.0',
     f'script = ExtResource("6_synth_audio_3d")',
     'synth_type = "elevator_hum"',
 ])
 
 # Cabin light
-omni_light("CabinLight", EL, 17, 2.5, 4.8, 1.2, color(0.85, 0.92, 1.0))
+omni_light("CabinLight", EL, 17, 2.5, 6.6, 1.2, color(0.85, 0.92, 1.0))
 
 # ── STAIRWELL ────────────────────────────────────────────────────────────────
 node("Stairwell", "Node3D", "Geometry", [])
 SW = "Geometry/Stairwell"
 
-# Stairwell shaft walls (full height for all 8 floors: 8 * 2.8 = 22.4 m)
-shaft_h = 8 * 2.8  # 22.4
+# Stairwell shaft walls (from Y = 3.0 down to Y = -23.0, total 26.0m)
+shaft_h = 26.0
 shaft_cx = -10
-shaft_cy = -shaft_h / 2  # -11.2 (center of the full shaft)
-csg_box("ShaftWallNorth", SW, shaft_cx, shaft_cy, -0.65, 4.6, shaft_h, 0.3, M_CONCRETE)
-csg_box("ShaftWallSouth", SW, shaft_cx, shaft_cy, 3.65, 4.6, shaft_h, 0.3, M_CONCRETE)
-csg_box("ShaftWallEast", SW, -7.7, shaft_cy, 1.5, 0.3, shaft_h, 4.6, M_CONCRETE)
-csg_box("ShaftWallWest", SW, -12.3, shaft_cy, 1.5, 0.3, shaft_h, 4.6, M_CONCRETE)
+shaft_cy = -10.0  # Center Y
 
-# Fire door (Level 8 entry)
-door_static("FireDoor_L8", SW, -8, 0, 1.5,
+# Shaft North, South (split), East (split), West walls
+csg_box("ShaftWallNorth", SW, shaft_cx, shaft_cy, -6.4, 4.6, shaft_h, 0.3, M_CONCRETE)
+csg_box("ShaftWallWest", SW, -12.3, shaft_cy, -1.1, 0.3, shaft_h, 10.6, M_CONCRETE)
+
+# Split South wall around Ground exit door (at X = -10.0, Y = [-22.4, -20.4], Z = 4.2)
+csg_box("ShaftWallSouth_Below", SW, -10.0, -22.7, 4.2, 4.6, 0.6, 0.3, M_CONCRETE)
+csg_box("ShaftWallSouth_Above", SW, -10.0, -8.7, 4.2, 4.6, 23.4, 0.3, M_CONCRETE)
+csg_box("ShaftWallSouth_West", SW, -11.4, -21.4, 4.2, 1.8, 2.0, 0.3, M_CONCRETE)
+csg_box("ShaftWallSouth_East", SW, -8.6, -21.4, 4.2, 1.8, 2.0, 0.3, M_CONCRETE)
+
+# Split East wall around Level 8 entry fire door (at X = -7.7, Y = [0.0, 2.0], Z = [2.9, 3.9])
+csg_box("ShaftWallEast_Below", SW, -7.7, -11.5, -1.1, 0.3, 23.0, 10.6, M_CONCRETE)
+csg_box("ShaftWallEast_Above", SW, -7.7, 2.5, -1.1, 0.3, 1.0, 10.6, M_CONCRETE)
+csg_box("ShaftWallEast_North", SW, -7.7, 1.0, -1.75, 0.3, 2.0, 9.3, M_CONCRETE)
+csg_box("ShaftWallEast_South", SW, -7.7, 1.0, 4.05, 0.3, 2.0, 0.3, M_CONCRETE)
+
+# Fire door (Level 8 entry) - aligned to East wall cutout at Z = 3.4, X = -7.7
+door_static("FireDoor_L8", SW, -7.7, 0, 3.4,
             is_hot=False, can_feel=True, open_angle=90.0,
             door_mat=M_STEEL_DOOR, rot_y=90,
             prompt="Fire Exit — Feel door before opening [F]")
 
 # Push bar on fire door
-csg_box("PushBar", SW, -8, 0.9, 1.5, 0.9, 0.08, 0.05, M_PUSH_BAR, collision=False)
+csg_box("PushBar", SW, -7.7, 0.9, 3.4, 0.9, 0.08, 0.05, M_PUSH_BAR, collision=False)
 
 # Exit sign above fire door
-csg_box("ExitSignFireDoor", SW, -8, 2.5, 1.5, 0.6, 0.3, 0.05, M_EXIT_SIGN, collision=False)
+csg_box("ExitSignFireDoor", SW, -7.7, 2.5, 3.4, 0.6, 0.3, 0.05, M_EXIT_SIGN, collision=False)
+
+# Shaft ceiling (roof) and bottom floor
+csg_box("ShaftRoof", SW, shaft_cx, 2.75, -1.1, 4.6, 0.1, 10.6, M_CONCRETE)
+csg_box("ShaftFloor", SW, shaft_cx, -22.45 - 0.05, -1.1, 4.6, 0.1, 10.6, M_CONCRETE_DARK)
 
 import math
 
-# Generate 8 landings and 8 flights (L8 to Ground)
-# Switchback: flights alternate Z direction
-# Flight 1: goes from z=1.5 to z=-4.0 (northward, -Z) while descending
-# Flight 2: goes from z=-4.0 back to z=1.5 (southward, +Z)
-
 # Parameters
 FLOOR_HEIGHT = 2.8
-FLIGHT_Z_LEN = 5.5   # horizontal run per flight
-LANDING_DEPTH = 3.0
-STAIR_WIDTH = 3.6
+FLIGHT_Z_LEN = 6.0   # horizontal run per flight
+LANDING_DEPTH = 2.0
+STAIR_WIDTH = 4.3
 
-for floor_idx in range(8):  # 0=L8, 7=L1
-    floor_num = 8 - floor_idx       # 8,7,6,5,4,3,2,1
-    y_land = -(floor_idx * FLOOR_HEIGHT)  # landing Y for this floor
+# Generate landings L8 down to Ground (9 landings: L8 to L1 and Ground)
+for floor_idx in range(9):
+    floor_num = 8 - floor_idx
+    y_land = -(floor_idx * FLOOR_HEIGHT)
     
-    # Landing
-    node(f"Landing_L{floor_num}", "Node3D", SW, [])
-    lnd = f"{SW}/Landing_L{floor_num}"
-    csg_box("Floor", lnd, shaft_cx, y_land - 0.05, 1.5, STAIR_WIDTH, 0.1, LANDING_DEPTH, M_CONCRETE_DARK)
+    # Alternate Z position for switchback
+    if floor_idx % 2 == 0:
+        z_land = 2.9   # even landings (L8, L6, L4, L2, Ground)
+    else:
+        z_land = -5.1  # odd landings (L7, L5, L3, L1)
+        
+    landing_name = f"Landing_L{floor_num}" if floor_idx < 8 else "Landing_Ground"
+    node(landing_name, "Node3D", SW, [])
+    lnd = f"{SW}/{landing_name}"
     
-    # Floor number sign on north wall
-    csg_box("FloorSign", lnd, shaft_cx, y_land + 1.4, -0.5, 0.4, 0.6, 0.05, M_FLOOR_NUM, collision=False)
+    csg_box("Floor", lnd, shaft_cx, y_land - 0.05, z_land, STAIR_WIDTH, 0.1, LANDING_DEPTH, M_CONCRETE_DARK)
+    csg_box("Ceiling", lnd, shaft_cx, y_land + 2.75, z_land, STAIR_WIDTH, 0.1, LANDING_DEPTH, M_CONCRETE)
+    
+    # Floor number sign
+    sign_z = 2.0 + z_land if (floor_idx % 2 == 0) else z_land - 1.0  # placed relative to landing
+    csg_box("FloorSign", lnd, shaft_cx, y_land + 1.4, sign_z, 0.4, 0.6, 0.05, M_FLOOR_NUM, collision=False)
     
     # Emergency light
-    omni_light("EmergLight", lnd, shaft_cx, y_land + 2.6, 1.5, 0.8,
+    omni_light("EmergLight", lnd, shaft_cx, y_land + 2.6, z_land, 0.8,
                color(0.8, 1.0, 0.8), flicker=True, fl_min=0.6, fl_max=0.9, fl_speed=4.0)
-    
-    # Ceiling above landing
-    csg_box("Ceiling", lnd, shaft_cx, y_land + 2.75, 1.5, STAIR_WIDTH, 0.1, LANDING_DEPTH, M_CONCRETE)
     
     # Exit sign above going back to corridor (only L8)
     if floor_idx == 0:
-        csg_box("ExitSignBack", lnd, shaft_cx, y_land + 2.5, 2.9, 0.6, 0.3, 0.05, M_EXIT_SIGN, collision=False)
+        csg_box("ExitSignBack", lnd, shaft_cx, y_land + 2.5, 3.9, 0.6, 0.3, 0.05, M_EXIT_SIGN, collision=False)
 
-    # Stair flight descending from this landing (except ground)
-    if floor_idx < 7:
-        node(f"Flight_L{floor_num}_to_L{floor_num-1}", "Node3D", SW, [])
-        flt = f"{SW}/Flight_L{floor_num}_to_L{floor_num-1}"
+    # Stair flight descending from this landing (8 flights: L8->L7 down to L1->Ground)
+    if floor_idx < 8:
+        flight_name = f"Flight_L{floor_num}_to_L{floor_num-1}" if floor_idx < 7 else "Flight_L1_to_Ground"
+        node(flight_name, "Node3D", SW, [])
+        flt = f"{SW}/{flight_name}"
         
-        # Determine direction: even floors go -Z (north), odd go +Z (south)
-        if floor_idx % 2 == 0:
-            flt_z_center = 1.5 - FLIGHT_Z_LEN / 2 - LANDING_DEPTH / 2  # goes north
-            z_sign = -1
-        else:
-            flt_z_center = 1.5 + FLIGHT_Z_LEN / 2 + LANDING_DEPTH / 2  # goes south
-            z_sign = 1
+        # Determine direction: even floors go north, odd go south
+        z_sign = -1 if (floor_idx % 2 == 0) else 1
+        rot_deg = z_sign * 25.01689  # Slope angle for 2.8m drop over 6.0m run
         
         y_ramp = y_land - FLOOR_HEIGHT / 2
-        rot_deg = z_sign * 28  # ~28 degrees slope for 2.8 drop over 5.5 run
-        
+        flt_z_center = -1.1
         flt_len = math.sqrt(FLIGHT_Z_LEN**2 + FLOOR_HEIGHT**2)
         
         props = [
@@ -747,38 +872,33 @@ for floor_idx in range(8):  # 0=L8, 7=L1
         ]
         node("Ramp", "CSGBox3D", flt, props)
         
-        # Handrails
-        csg_box("HandrailL", flt, shaft_cx - STAIR_WIDTH/2 + 0.1, y_ramp + 0.9, flt_z_center, 0.05, 0.05, flt_len, M_RAILING, collision=False)
-        csg_box("HandrailR", flt, shaft_cx + STAIR_WIDTH/2 - 0.1, y_ramp + 0.9, flt_z_center, 0.05, 0.05, flt_len, M_RAILING, collision=False)
+        # Handrails - rotated properly with the ramp
+        node("HandrailL", "CSGBox3D", flt, [
+            f'transform = {tf_rot_x(rot_deg, shaft_cx - STAIR_WIDTH/2 + 0.1, y_ramp + 0.9, flt_z_center)}',
+            f'size = Vector3(0.05, 0.05, {flt_len:.2f})',
+            f'material = SubResource("{M_RAILING}")',
+        ])
+        node("HandrailR", "CSGBox3D", flt, [
+            f'transform = {tf_rot_x(rot_deg, shaft_cx + STAIR_WIDTH/2 - 0.1, y_ramp + 0.9, flt_z_center)}',
+            f'size = Vector3(0.05, 0.05, {flt_len:.2f})',
+            f'material = SubResource("{M_RAILING}")',
+        ])
 
-# Ground floor landing (Level 1 exit landing, at y = -7*2.8 = -19.6)
-y_ground_land = -(7 * FLOOR_HEIGHT)  # = -19.6 (this is L1 landing)
-
-# Ground floor exit door (from stairwell to outside)
-y_ground_door = -(8 * FLOOR_HEIGHT) + FLOOR_HEIGHT  # = -19.6, door at base
-# Actually let's place ground exit at the very bottom
-y_ground_exit = -(8 * FLOOR_HEIGHT - FLOOR_HEIGHT)
-node("GroundExitLanding", "Node3D", SW, [])
-gel = f"{SW}/GroundExitLanding"
-csg_box("Floor", gel, shaft_cx, -22.45 - 0.05, 1.5, STAIR_WIDTH, 0.1, LANDING_DEPTH, M_CONCRETE_DARK)
-csg_box("Ceiling", gel, shaft_cx, -22.45 + 2.75, 1.5, STAIR_WIDTH, 0.1, LANDING_DEPTH, M_CONCRETE)
-omni_light("GroundLight", gel, shaft_cx, -22.45 + 2.5, 1.5, 1.2,
-           color(0.8, 1.0, 0.8), flicker=False)
-csg_box("ExitSignGround", gel, shaft_cx, -22.45 + 2.5, 3.0, 0.8, 0.3, 0.05, M_EXIT_SIGN, collision=False)
-
-# Ground stairwell exit door
-door_static("GroundExitDoor", SW, shaft_cx, -22.45, 4.0,
+# Ground exit door - aligned to South wall cutout at Z = 4.2, X = -10.0, Y = -22.4
+door_static("GroundExitDoor", SW, shaft_cx, -22.4, 4.2,
             is_stairs=True, is_door=True, can_feel=False,
-            door_mat=M_GREEN_DOOR,
+            door_mat=M_GREEN_DOOR, rot_y=0,
             prompt="GROUND FLOOR — [E] Exit to Assembly Point")
-csg_box("GroundExitSign", SW, shaft_cx, -22.45 + 2.3, 4.1, 1.0, 0.3, 0.05, M_EXIT_SIGN, collision=False)
+
+# Exit sign above ground exit door
+csg_box("GroundExitSign", SW, shaft_cx, -22.4 + 2.3, 4.2, 1.0, 0.3, 0.05, M_EXIT_SIGN, collision=False)
 
 # ── OUTSIDE ──────────────────────────────────────────────────────────────────
 node("Outside", "Node3D", ".", [])
 OUT = "Outside"
 
-# Street / driveway
-csg_box("StreetFloor", OUT, 0, -22.6, 30, 50, 0.1, 30, M_ASPHALT)
+# Huge Street / driveway covering all voids
+csg_box("StreetFloor", OUT, 0, -22.6, 15, 80, 0.1, 60, M_ASPHALT)
 
 # Assembly point
 csg_box("AssemblyZone", OUT, -8, -22.55, 22, 8, 0.05, 6, M_ASSEMBLY)

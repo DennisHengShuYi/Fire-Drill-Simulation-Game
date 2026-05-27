@@ -17,17 +17,19 @@ extends StaticBody3D
 @export var is_phone: bool = false
 @export var is_sink: bool = false
 @export var is_locked_door: bool = false
+@export var is_npc: bool = false
 
 var original_rotation_y: float = 0.0
 var tween: Tween
 
 func _ready():
 	original_rotation_y = rotation.y
-	# Ensure the collision layer is set up for raycasting (e.g. layer 2 for interactables)
-	collision_layer = 2 # Layer 2 is interactables
+	collision_layer = 2
 
 func get_interact_prompt() -> String:
-	if is_door:
+	if is_door and is_stairs:
+		return "[E] Open Fire Exit"
+	elif is_door:
 		return "[E] Open Door" + (", [F] Feel Door" if can_feel and not door_opened else "")
 	elif is_lift:
 		return "[E] Press Lift Button"
@@ -39,44 +41,56 @@ func get_interact_prompt() -> String:
 		return "[E] Sink (Get Wet Towel)"
 	elif is_locked_door:
 		return "[E] Try Door (Locked)"
+	elif is_npc:
+		return prompt_message if prompt_message != "Object" else "[E] Report to building warden"
 	return "[E] " + prompt_message
 
+# BUG 1 FIX: when BOTH is_door and is_stairs are true (GroundExitDoor),
+# call toggle_door() AND handle the outside transition — the elif chain
+# previously short-circuited on is_door, so use_stairs was never reached.
 func interact(player: CharacterBody3D):
-	if is_door:
+	if is_door and is_stairs:
+		toggle_door(player)
+		if door_opened:
+			GameManager.used_stairs = true
+			player.teleport_to_outside()
+	elif is_door:
 		toggle_door(player)
 		if name == "StairsExitDoor" and door_opened:
 			player.is_outside = true
+		elif name.to_lower().contains("firedoor") and door_opened:
+			use_stairs(player)
 	elif is_lift:
 		use_lift(player)
 	elif is_stairs:
 		use_stairs(player)
-		if name == "GroundExitDoor" and door_opened:
-			player.is_outside = true
-			player.show_log_message("You are outside! Head to the assembly point and call 999!")
 	elif is_phone:
 		use_phone(player)
 	elif is_sink:
 		use_sink(player)
 	elif is_locked_door:
 		player.show_log_message("This neighbor's door is locked! You must evacuate using the stairs!")
+	elif is_npc:
+		player.show_log_message("Warden: 'Unit 8A confirmed evacuated. Now call BOMBA at 999 immediately!'")
+		GameManager.reported_to_warden = true
 
 func feel(player: CharacterBody3D) -> String:
 	if not can_feel or door_opened:
 		return "Nothing to feel."
-		
+
 	if is_door:
 		if name.to_lower().contains("bedroom"):
 			GameManager.felt_bedroom_door = true
 		elif name.to_lower().contains("kitchen"):
 			GameManager.felt_kitchen_door = true
-			
+
 		if is_hot:
 			play_sound_3d("sizzle")
 			return "WARNING: The door and handle feel extremely HOT! There is fire on the other side!"
 		else:
 			play_sound_3d("door_creak")
 			return "The door handle feels cool. It seems safe to open slowly."
-			
+
 	return "It feels normal."
 
 func toggle_door(player: CharacterBody3D):
@@ -90,67 +104,65 @@ func toggle_door(player: CharacterBody3D):
 		)
 		return
 
-	if not can_feel and is_hot:
-		return
-
 	door_opened = !door_opened
 	play_sound_3d("door_creak")
-	
+
 	var door_mesh = get_node_or_null(door_mesh_path)
 	if door_mesh:
 		if tween:
 			tween.kill()
 		tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		
 		var target_rot = original_rotation_y
 		if door_opened:
 			target_rot = original_rotation_y + deg_to_rad(open_angle)
-			
 		tween.tween_property(door_mesh, "rotation:y", target_rot, 0.6)
 		player.show_log_message("Opened the door.")
 	else:
 		if tween:
 			tween.kill()
 		tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		var target_rot = original_rotation_y
+		# door_opened is already toggled above, so check the new state correctly:
+		# door_opened == true means we just opened it → rotate to open angle
+		# door_opened == false means we just closed it → rotate back to original
+		var target_rot: float
 		if door_opened:
 			target_rot = original_rotation_y + deg_to_rad(open_angle)
+		else:
+			target_rot = original_rotation_y
 		tween.tween_property(self, "rotation:y", target_rot, 0.6)
 		player.show_log_message("Opened the door.")
 
 func use_lift(player: CharacterBody3D):
 	if door_opened:
 		return
-		
+
 	door_opened = true
 	play_sound_3d("door_creak")
-	
+
 	var col = get_node_or_null("CollisionShape3D")
 	if col:
 		col.disabled = true
-	
+
 	if tween:
 		tween.kill()
 	tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	# Slide door 1.5m to the side (in local X) to open
 	var open_x = global_position.x + 1.5
 	tween.tween_property(self, "global_position:x", open_x, 1.5)
-	
+
 	player.show_log_message("The elevator doors slide open. Step inside...")
 
-
+# BUG 8 FIX: use_stairs() is now only for stairwell-entry doors (e.g. FireDoor_L8).
+# GroundExitDoor (is_door+is_stairs) calls player.teleport_to_outside() directly.
 func use_stairs(player: CharacterBody3D):
 	GameManager.used_stairs = true
 	player.show_log_message("You push through the fire exit door! Descend to the ground floor!")
-	# Teleport player inside the stairwell landing on Level 8
-	player.global_position = Vector3(-10, 0.05, 1.5)
+	player.global_position = Vector3(-10, 0.05, 2.9)
 
 func use_phone(player: CharacterBody3D):
 	if not player.is_outside:
 		player.show_log_message("Get outside first before calling!")
 		return
 	GameManager.called_999 = true
-	# Show phone screen or trigger victory directly
 	player.open_phone_dialer()
 
 func play_sound_3d(type: String):
