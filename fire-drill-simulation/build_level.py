@@ -340,6 +340,22 @@ def sink_static(name, parent, px, py, pz, sx, sy, sz):
         f'material_override = SubResource("{M_TILE_WHITE}")',
     ])
 
+def tree_static(name, parent, px, py, pz):
+    """Emit a static tree with a trunk and foliage."""
+    # Trunk
+    csg_box(f"{name}_Trunk", parent, px, py + 1.0, pz, 0.25, 2.0, 0.25, M_WOOD_PROP)
+    # Foliage
+    csg_box(f"{name}_Leaves", parent, px, py + 2.5, pz, 1.8, 1.8, 1.8, M_ASSEMBLY, collision=False)
+
+def streetlight_static(name, parent, px, py, pz):
+    """Emit a static streetlight with a post, head, and active light source."""
+    # Post
+    csg_box(f"{name}_Post", parent, px, py + 2.0, pz, 0.1, 4.0, 0.1, M_SIGN_POST)
+    # Head
+    csg_box(f"{name}_Head", parent, px, py + 4.1, pz, 0.5, 0.2, 0.5, M_FLOOR_NUM, collision=False)
+    # Light source
+    omni_light(f"{name}_Light", parent, px, py + 3.8, pz, 1.5, color(1.0, 0.9, 0.7), omni_range=12.0)
+
 def smoke_particle(name, parent, px, py, pz, col=(0.15,0.15,0.15,0.6),
                    vel=0.5, spread=40, lifetime=3.0, is_fire=False):
     """Emit a dynamic CPUParticles3D for high visibility and realistic animation."""
@@ -1168,36 +1184,36 @@ door_static("GroundExitDoor", SW, shaft_cx, -22.4, 5.9,
 csg_box("GroundExitSign", SW, shaft_cx, -22.4 + 2.3, 4.2, 1.0, 0.3, 0.05, M_EXIT_SIGN, collision=False)
 
 # NPCs (Evacuating residents descending stairs)
-# NPC 1 starts on L7 landing (waypoint index 2)
+# NPC 1 starts on L7 landing (waypoint index 2) - East side
 node("Evacuee_L7", "CharacterBody3D", SW, [
-    f'transform = {tf(-12.5, -2.7, -3.7)}',
+    f'transform = {tf(-11.3, -2.7, -3.7)}',
     'collision_layer = 4',
     'collision_mask = 3',
     f'script = ExtResource("9_npc")',
     'start_waypoint = 2',
 ])
 
-# NPC 2 starts on L5 landing (waypoint index 6)
+# NPC 2 starts on L5 landing (waypoint index 6) - East side
 node("Evacuee_L5", "CharacterBody3D", SW, [
-    f'transform = {tf(-12.5, -8.3, -3.7)}',
+    f'transform = {tf(-11.3, -8.3, -3.7)}',
     'collision_layer = 4',
     'collision_mask = 3',
     f'script = ExtResource("9_npc")',
     'start_waypoint = 6',
 ])
 
-# NPC 3 starts on L3 landing (waypoint index 10)
+# NPC 3 starts on L3 landing (waypoint index 10) - East side
 node("Evacuee_L3", "CharacterBody3D", SW, [
-    f'transform = {tf(-12.5, -13.9, -3.7)}',
+    f'transform = {tf(-11.3, -13.9, -3.7)}',
     'collision_layer = 4',
     'collision_mask = 3',
     f'script = ExtResource("9_npc")',
     'start_waypoint = 10',
 ])
 
-# NPC 4 starts on L2 landing (waypoint index 12)
+# NPC 4 starts on L2 landing (waypoint index 12) - West side
 node("Evacuee_L2", "CharacterBody3D", SW, [
-    f'transform = {tf(-12.5, -16.7, 4.7)}',
+    f'transform = {tf(-13.7, -16.7, 4.7)}',
     'collision_layer = 4',
     'collision_mask = 3',
     f'script = ExtResource("9_npc")',
@@ -1211,6 +1227,32 @@ OUT = "Outside"
 
 # Huge Street / driveway covering all voids
 csg_box("StreetFloor", OUT, 0, -22.6, 15, 80, 0.1, 60, M_ASPHALT)
+
+# Condo Tower main building block (floors 1-7 below the level 8 apartment)
+# Positioned at Y = -11.25 (height 22.5m, sitting on Y = -22.5 street floor, extending to Y = 0.0)
+# Covers X = [-10, 21] (width 31m) and Z = [-11, 7.5] (depth 18.5m)
+csg_box("CondoBuildingBody", OUT, 5.5, -11.25, -1.75, 31.0, 22.5, 18.5, M_CONCRETE)
+
+# Add decorative windows for floors 1 to 7 on the South face (Z = 7.5)
+# Y levels correspond to floor heights: -22.4 base + floor offset + window height offset
+for f_idx in range(1, 8):
+    y_win = -22.4 + (f_idx - 1) * 2.8 + 1.2
+    for x_win in [0.0, 5.0, 10.0, 15.0]:
+        csg_box(f"Window_S_{f_idx}_{int(x_win)}", OUT, x_win, y_win, 7.52, 1.2, 1.4, 0.05, M_CONCRETE_DARK, collision=False)
+
+# Grass borders on sides of driveway to populate the void
+csg_box("GrassWest", OUT, -25.0, -22.58, 15.0, 20.0, 0.05, 50.0, M_ASSEMBLY, collision=True)
+csg_box("GrassEast", OUT, 25.0, -22.58, 25.0, 20.0, 0.05, 30.0, M_ASSEMBLY, collision=True)
+
+# Trees on grass
+tree_static("Tree_W1", OUT, -18.0, -22.6, 15.0)
+tree_static("Tree_W2", OUT, -18.0, -22.6, 25.0)
+tree_static("Tree_E1", OUT, 22.0, -22.6, 20.0)
+tree_static("Tree_E2", OUT, 22.0, -22.6, 30.0)
+
+# Streetlights along walk path and driveway
+streetlight_static("Streetlight_W", OUT, -14.0, -22.6, 15.0)
+streetlight_static("Streetlight_E", OUT, 14.0, -22.6, 20.0)
 
 # Assembly point
 csg_box("AssemblyZone", OUT, -8, -22.55, 22, 8, 0.05, 6, M_ASSEMBLY)

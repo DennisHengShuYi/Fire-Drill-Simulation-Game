@@ -2,7 +2,7 @@ extends CharacterBody3D
 ## Evacuating resident NPC that descends the stairwell switchback, demonstrates
 ## correct evacuation behaviour, and teaches the player not to push or shove.
 
-const NPC_SPEED       : float = 1.8   # m/s (slower than player 3.5 m/s)
+const NPC_SPEED       : float = 2.4   # m/s (slower than player 3.5 m/s)
 const GRAVITY         : float = 9.8
 const WAYPOINT_REACH  : float = 1.1   # XZ radius to count waypoint as reached
 const PUSH_COOLDOWN   : float = 4.0   # seconds between "Don't push!" messages
