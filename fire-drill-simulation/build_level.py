@@ -727,7 +727,7 @@ omni_light("LivingLight", LV, -0.5, 2.5, -2.0, 1.6, color(1.0, 0.95, 0.88),
 
 # Fire extinguisher in living room
 node("FireExtinguisher", "StaticBody3D", G, [
-    f'transform = {tf(-3.8, 0.8, -0.2)}',
+    f'transform = {tf(-4.9, 0.8, -3.5)}',
     'collision_layer = 2',
     f'script = ExtResource("2_interactable")',
     'prompt_message = "Fire extinguisher — [E] Use (PASS method: Pull, Aim, Squeeze, Sweep)"',
@@ -743,6 +743,7 @@ node("Mesh", "MeshInstance3D", G + "/FireExtinguisher", [
     f'mesh = SubResource("{SHP_EXTINGUISH}")',
     f'material_override = SubResource("{M_PHONE_BOX}")',
 ])
+csg_box("FireExtinguisher_Sign", G, -4.95, 1.8, -3.5, 0.05, 0.25, 0.4, M_WARN_SIGN, collision=False)
 
 # Unit Front Door (at Z = 1.0, centered at X = 0.0)
 door_static("UnitFrontDoor", G, 0.0, 0, 1.0,
@@ -931,7 +932,7 @@ for i, cx in enumerate([0, 5, 10]):
 
 # Corridor extinguisher (south wall)
 node("CorridorExtinguisher", "StaticBody3D", SC, [
-    f'transform = {tf(-2, 0.8, 6.4)}',
+    f'transform = {tf(-2.0, 0.8, 6.45)}',
     'collision_layer = 2',
     f'script = ExtResource("2_interactable")',
     'prompt_message = "[E] Fire extinguisher — Pull pin, Aim low, Squeeze, Sweep side to side"',
@@ -947,6 +948,7 @@ node("Mesh", "MeshInstance3D", f"{SC}/CorridorExtinguisher", [
     f'mesh = SubResource("{SHP_EXTINGUISH}")',
     f'material_override = SubResource("{M_PHONE_BOX}")',
 ])
+csg_box("CorridorExtinguisher_Sign", SC, -2.0, 1.8, 6.52, 0.4, 0.25, 0.05, M_WARN_SIGN, collision=False)
 
 # Unlocked, interactable door for the new neighbor unit (Unit 8B) at X = 11.0, leading into Unit 8B room
 door_static("Unit8B_CorridorDoor", SC, 11.0, 0, 3.4,
