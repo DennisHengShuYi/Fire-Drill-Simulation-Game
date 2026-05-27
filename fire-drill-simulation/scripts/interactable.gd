@@ -76,8 +76,8 @@ func get_interact_prompt() -> String:
 		return "[E] Try Door (Locked)"
 	elif is_extinguisher:
 		if extinguisher_used:
-			return "Fire Extinguisher (empty — already used)"
-		return "[E] Use Fire Extinguisher (PASS technique)"
+			return "Fire Extinguisher (empty)"
+		return "[E] Pick up Fire Extinguisher"
 	elif is_npc:
 		return prompt_message if prompt_message != "Object" else "[E] Report to building warden"
 	return "[E] " + prompt_message
@@ -111,7 +111,7 @@ func interact(player: CharacterBody3D):
 	elif is_sink:
 		use_sink(player)
 	elif is_extinguisher:
-		use_extinguisher(player)
+		pick_up_extinguisher(player)
 	elif is_locked_door:
 		player.show_log_message("This neighbor's door is locked! You must evacuate using the stairs!")
 	elif is_npc:
@@ -238,20 +238,27 @@ func use_sink(player: CharacterBody3D):
 	play_sound_3d("sizzle")
 	player.show_log_message("Wet towel obtained! Smoke exposure rate reduced by 50%!")
 
-func use_extinguisher(player: CharacterBody3D):
+func pick_up_extinguisher(player: CharacterBody3D):
 	if extinguisher_used:
-		player.show_log_message("The extinguisher is empty. A standard 1 kg extinguisher only lasts 8-12 seconds!")
+		player.show_log_message("This extinguisher is empty!")
 		return
-	if in_smoke_zone_heavy(player):
-		player.show_log_message("BOMBA TIP: Never use an extinguisher if the room is already thick with smoke — get out!")
+	if player.has_extinguisher:
+		player.show_log_message("You are already carrying a fire extinguisher!")
 		return
-	# Kick off the PASS minigame on the player
-	if player.has_method("start_extinguisher_minigame"):
-		player.start_extinguisher_minigame(self)
-
-func in_smoke_zone_heavy(player: CharacterBody3D) -> bool:
-	# If the corridor fire has grown very large, block extinguisher use for realism
-	return player.in_fire_zone
+		
+	# Pick up
+	player.has_extinguisher = true
+	player.carried_extinguisher_ref = self
+	
+	# Hide visually and disable collision/interaction
+	visible = false
+	collision_layer = 0
+	
+	# Show in player's hands
+	if player.has_method("show_hand_extinguisher"):
+		player.show_hand_extinguisher()
+	player.show_log_message("Picked up Fire Extinguisher! Press [Left-Click] or [E] near fire to use.")
+	play_sound_3d("door_creak")
 
 func knock(player: CharacterBody3D):
 	if not is_locked_door or not has_trapped_npc:

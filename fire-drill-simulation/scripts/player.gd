@@ -53,6 +53,9 @@ var dilemma_door: Node = null
 var in_extinguisher_minigame: bool = false
 var minigame_step: int = 0
 var current_extinguisher: Node = null
+var has_extinguisher: bool = false
+var carried_extinguisher_ref: Node = null
+var hand_extinguisher_mesh: MeshInstance3D = null
 
 # --- Pause ---
 var is_paused: bool = false
@@ -90,6 +93,9 @@ func _ready():
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	phone_panel.visible = false
 	smoke_overlay.color.a = 0.0
+	has_extinguisher = false
+	carried_extinguisher_ref = null
+	hide_hand_extinguisher()
 
 	for btn in $HUD/PhonePanel/GridContainer.get_children():
 		if btn is Button:
@@ -142,6 +148,23 @@ func _input(event):
 		if event is InputEventKey and event.pressed:
 			process_minigame_key(event.keycode)
 		return
+
+	if has_extinguisher and not in_extinguisher_minigame and not phone_active:
+		var want_use = false
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			want_use = true
+		elif event is InputEventKey and event.pressed and event.keycode == KEY_E:
+			var is_aiming_interactable = false
+			if raycast.is_colliding():
+				var col = raycast.get_collider()
+				if col is Interactable:
+					is_aiming_interactable = true
+			if not is_aiming_interactable:
+				want_use = true
+				
+		if want_use:
+			try_use_extinguisher()
+			return
 
 	if event is InputEventMouseMotion and mouse_captured:
 		rotate_y(-event.relative.x * mouse_sensitivity)
@@ -337,7 +360,10 @@ func check_interaction():
 			elif Input.is_action_just_pressed("knock_door") and collider.has_method("knock"):
 				collider.knock(self)
 			return
-	prompt_label.text = ""
+	if has_extinguisher:
+		prompt_label.text = "[Left-Click] or [E] Use Fire Extinguisher"
+	else:
+		prompt_label.text = ""
 
 # ---------------------------------------------------------------------------
 # Smoke / Oxygen
@@ -866,6 +892,10 @@ func complete_extinguisher_success():
 	else:
 		show_log_message("SUCCESS! Extinguisher used, but no active fire nearby to suppress.")
 		
+	# Clean up carried state & mesh
+	has_extinguisher = false
+	carried_extinguisher_ref = null
+	hide_hand_extinguisher()
 	current_extinguisher = null
 
 func complete_extinguisher_failure():
@@ -886,6 +916,11 @@ func complete_extinguisher_failure():
 	camera.position.y += randf_range(-0.15, 0.15)
 	
 	show_log_message("FAILED! Incorrect technique! CO2 cloud released. You inhaled gas (-20 Oxygen)!")
+	
+	# Clean up carried state & mesh
+	has_extinguisher = false
+	carried_extinguisher_ref = null
+	hide_hand_extinguisher()
 	
 	if current_oxygen <= 0.0:
 		is_timer_active = false
@@ -927,4 +962,43 @@ func find_nearest_fire_recursive(node: Node, min_dist: float) -> Array:
 			nearest = res[0]
 			best_dist = res[1]
 	return [nearest, best_dist]
+
+func try_use_extinguisher():
+	var res = find_nearest_fire_recursive(get_tree().current_scene, 99999.0)
+	var nearest = res[0]
+	var distance = res[1]
+	
+	if nearest == null or distance > 4.5:
+		show_log_message("You are too far from the fire! Get closer (within 4.5 meters) to use the extinguisher.")
+		return
+		
+	start_extinguisher_minigame(carried_extinguisher_ref)
+
+func show_hand_extinguisher():
+	if hand_extinguisher_mesh:
+		hand_extinguisher_mesh.queue_free()
+	
+	hand_extinguisher_mesh = MeshInstance3D.new()
+	hand_extinguisher_mesh.name = "HandExtinguisher"
+	
+	var cyl = CylinderMesh.new()
+	cyl.top_radius = 0.05
+	cyl.bottom_radius = 0.05
+	cyl.height = 0.35
+	hand_extinguisher_mesh.mesh = cyl
+	
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.8, 0.1, 0.1)
+	mat.roughness = 0.5
+	hand_extinguisher_mesh.material_override = mat
+	
+	camera.add_child(hand_extinguisher_mesh)
+	hand_extinguisher_mesh.transform.origin = Vector3(0.2, -0.22, -0.4)
+	hand_extinguisher_mesh.transform.basis = Basis(Vector3(1, 0, 0), deg_to_rad(15)) * Basis(Vector3(0, 1, 0), deg_to_rad(-15))
+
+func hide_hand_extinguisher():
+	if hand_extinguisher_mesh:
+		hand_extinguisher_mesh.queue_free()
+		hand_extinguisher_mesh = null
+
 
