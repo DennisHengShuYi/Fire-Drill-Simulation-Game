@@ -121,7 +121,7 @@ func spawn_adjacent_fire(offset: Vector3, suffix: String = ""):
 ## Shrinks this fire zone for `duration` seconds then restores it.
 func shrink_fire(duration: float = 10.0):
 	var original_scale = scale
-	var half_scale = original_scale * 0.4  # reduce to 40 % — visually suppressed
+	var half_scale = original_scale * 0.15  # reduce to 15% — dying but still slightly burning!
 
 	# Shrink hazard Area3D
 	scale = half_scale
@@ -133,7 +133,7 @@ func shrink_fire(duration: float = 10.0):
 	if particles and particles is CPUParticles3D:
 		original_particle_scale = particles.scale
 		particles.scale = half_scale
-		particles.emitting = false   # suppress visuals briefly
+		particles.emitting = true # keep emitting a tiny bit!
 
 	# Wait, then restore
 	await get_tree().create_timer(duration).timeout

@@ -887,6 +887,11 @@ func complete_extinguisher_success():
 	# Shrink nearest fire zone
 	var nearest_fire = get_nearest_fire()
 	if nearest_fire and nearest_fire.has_method("shrink_fire"):
+		var fire_pos = nearest_fire.global_position
+		# Spawn visual mist effects
+		spawn_nozzle_mist(fire_pos)
+		spawn_mist_particles(fire_pos)
+		
 		nearest_fire.shrink_fire(10.0)
 		show_log_message("SUCCESS! The nearest fire is suppressed! Corridor is cleared for 10s!")
 	else:
@@ -914,6 +919,9 @@ func complete_extinguisher_failure():
 	play_cough_sound()
 	camera.position.x += randf_range(-0.15, 0.15)
 	camera.position.y += randf_range(-0.15, 0.15)
+	
+	# Spawn visual gas cloud in player's face
+	spawn_face_mist()
 	
 	show_log_message("FAILED! Incorrect technique! CO2 cloud released. You inhaled gas (-20 Oxygen)!")
 	
@@ -1000,5 +1008,136 @@ func hide_hand_extinguisher():
 	if hand_extinguisher_mesh:
 		hand_extinguisher_mesh.queue_free()
 		hand_extinguisher_mesh = null
+
+func spawn_mist_particles(fire_pos: Vector3):
+	var mist = CPUParticles3D.new()
+	mist.name = "ExtinguisherMist"
+	
+	var quad = QuadMesh.new()
+	var mat = StandardMaterial3D.new()
+	mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
+	mat.billboard_mode = StandardMaterial3D.BILLBOARD_PARTICLES
+	mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0.9, 0.9, 0.95, 0.5)
+	
+	var tex = load("res://assets/particle_soft.png")
+	if tex:
+		mat.albedo_texture = tex
+	quad.material = mat
+	mist.mesh = quad
+	
+	mist.amount = 120
+	mist.lifetime = 1.5
+	mist.one_shot = true
+	mist.explosiveness = 0.8
+	mist.emitting = true
+	
+	mist.direction = Vector3.UP
+	mist.spread = 180.0
+	mist.gravity = Vector3(0, 0.2, 0)
+	mist.initial_velocity_min = 2.0
+	mist.initial_velocity_max = 4.0
+	
+	var curve = Curve.new()
+	curve.add_point(Vector2(0, 0.5))
+	curve.add_point(Vector2(1, 2.5))
+	mist.scale_amount_curve = curve
+	
+	get_tree().current_scene.add_child(mist)
+	mist.global_position = fire_pos
+	
+	var timer = get_tree().create_timer(2.0)
+	timer.timeout.connect(func():
+		if is_instance_valid(mist):
+			mist.queue_free()
+	)
+
+func spawn_nozzle_mist(target_pos: Vector3):
+	var mist = CPUParticles3D.new()
+	mist.name = "NozzleMist"
+	
+	var quad = QuadMesh.new()
+	var mat = StandardMaterial3D.new()
+	mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
+	mat.billboard_mode = StandardMaterial3D.BILLBOARD_PARTICLES
+	mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0.9, 0.9, 0.95, 0.4)
+	
+	var tex = load("res://assets/particle_soft.png")
+	if tex:
+		mat.albedo_texture = tex
+	quad.material = mat
+	mist.mesh = quad
+	
+	mist.amount = 80
+	mist.lifetime = 1.0
+	mist.one_shot = true
+	mist.explosiveness = 0.9
+	mist.emitting = true
+	
+	var shoot_dir = (target_pos - camera.global_position).normalized()
+	mist.direction = shoot_dir
+	mist.spread = 25.0
+	mist.gravity = Vector3(0, 0.1, 0)
+	mist.initial_velocity_min = 5.0
+	mist.initial_velocity_max = 8.0
+	
+	var curve = Curve.new()
+	curve.add_point(Vector2(0, 0.2))
+	curve.add_point(Vector2(1, 1.8))
+	mist.scale_amount_curve = curve
+	
+	get_tree().current_scene.add_child(mist)
+	mist.global_position = camera.global_position + camera.global_basis * Vector3(0.2, -0.2, -0.4)
+	
+	var timer = get_tree().create_timer(1.5)
+	timer.timeout.connect(func():
+		if is_instance_valid(mist):
+			mist.queue_free()
+	)
+
+func spawn_face_mist():
+	var mist = CPUParticles3D.new()
+	mist.name = "FaceMist"
+	
+	var quad = QuadMesh.new()
+	var mat = StandardMaterial3D.new()
+	mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
+	mat.billboard_mode = StandardMaterial3D.BILLBOARD_PARTICLES
+	mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0.9, 0.9, 0.95, 0.5)
+	
+	var tex = load("res://assets/particle_soft.png")
+	if tex:
+		mat.albedo_texture = tex
+	quad.material = mat
+	mist.mesh = quad
+	
+	mist.amount = 50
+	mist.lifetime = 1.2
+	mist.one_shot = true
+	mist.explosiveness = 0.8
+	mist.emitting = true
+	
+	mist.direction = camera.global_basis * Vector3(0, 0, 1)
+	mist.spread = 60.0
+	mist.gravity = Vector3(0, 0.1, 0)
+	mist.initial_velocity_min = 1.0
+	mist.initial_velocity_max = 2.0
+	
+	var curve = Curve.new()
+	curve.add_point(Vector2(0, 0.5))
+	curve.add_point(Vector2(1, 2.0))
+	mist.scale_amount_curve = curve
+	
+	get_tree().current_scene.add_child(mist)
+	mist.global_position = camera.global_position + camera.global_basis * Vector3(0, -0.1, -0.3)
+	
+	var timer = get_tree().create_timer(1.5)
+	timer.timeout.connect(func():
+		if is_instance_valid(mist):
+			mist.queue_free()
+	)
+
 
 
