@@ -23,19 +23,19 @@ func run_elevator_sequence(player):
 
 	await get_tree().create_timer(1.5).timeout
 
-	# BUG 4 FIX: close doors by reversing the 1.5 unit slide that use_lift() opened them with.
+	# Close doors by moving back to original X
 	for lift_door in [lift_door_a, lift_door_b]:
-		if lift_door:
+		if lift_door and lift_door.door_opened:
 			play_sound("door_creak")
 			var tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-			var open_pos_x = lift_door.global_position.x
-			var closed_pos_x = open_pos_x - 1.5
+			var closed_pos_x = lift_door.original_position.x
 			tween.tween_property(lift_door, "global_position:x", closed_pos_x, 2.0)
 			lift_door.door_opened = false
 			tween.finished.connect(func():
 				var col = lift_door.get_node_or_null("CollisionShape3D")
 				if col:
-					col.disabled = false
+					col.set_deferred("disabled", false)
+				lift_door.collision_layer = 2
 			)
 
 	await get_tree().create_timer(2.4).timeout

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where godot *)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/den51/AppData/Local/Godot/**)",
+      "Read(//c/Users/den51/AppData/Local/**)",
+      "Read(//c/Users/den51/Downloads/**)",
+      "Read(//c//**)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}

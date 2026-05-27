@@ -20,10 +20,12 @@ extends StaticBody3D
 @export var is_npc: bool = false
 
 var original_rotation_y: float = 0.0
+var original_position: Vector3
 var tween: Tween
 
 func _ready():
 	original_rotation_y = rotation.y
+	original_position = global_position
 	collision_layer = 2
 
 func get_interact_prompt() -> String:
@@ -59,7 +61,7 @@ func interact(player: CharacterBody3D):
 		if name == "StairsExitDoor" and door_opened:
 			player.is_outside = true
 		elif name.to_lower().contains("firedoor") and door_opened:
-			use_stairs(player)
+			GameManager.used_stairs = true
 	elif is_lift:
 		use_lift(player)
 	elif is_stairs:
@@ -139,24 +141,34 @@ func use_lift(player: CharacterBody3D):
 	door_opened = true
 	play_sound_3d("door_creak")
 
+	# Instantly disable collision layer to prevent the sliding door from physically pushing the player
+	collision_layer = 0
 	var col = get_node_or_null("CollisionShape3D")
 	if col:
 		col.disabled = true
 
 	if tween:
 		tween.kill()
-	tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	var open_x = global_position.x + 1.5
-	tween.tween_property(self, "global_position:x", open_x, 1.5)
 
-	player.show_log_message("The elevator doors slide open. Step inside...")
+	# Slide door open in the X direction (into the wall cavity)
+	tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	var open_x: float
+	if name == "LiftA":
+		open_x = global_position.x - 1.2
+	else:
+		open_x = global_position.x + 1.2
+	tween.tween_property(self, "global_position:x", open_x, 1.0)
+
+	# Player is free to walk inside — the ElevatorCabinArea (elevator.gd)
+	# triggers the sequence automatically when the player physically steps in.
+	player.show_log_message("The elevator doors slide open. Step inside — or take the stairs!!")
 
 # BUG 8 FIX: use_stairs() is now only for stairwell-entry doors (e.g. FireDoor_L8).
 # GroundExitDoor (is_door+is_stairs) calls player.teleport_to_outside() directly.
 func use_stairs(player: CharacterBody3D):
 	GameManager.used_stairs = true
 	player.show_log_message("You push through the fire exit door! Descend to the ground floor!")
-	player.global_position = Vector3(-10, 0.05, 2.9)
+	player.global_position = Vector3(-12.5, 0.05, 4.5)
 
 func use_phone(player: CharacterBody3D):
 	if not player.is_outside:
