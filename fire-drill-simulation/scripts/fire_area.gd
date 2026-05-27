@@ -69,15 +69,22 @@ func grow_fire():
 				player.show_log_message("WARNING: The fire is spreading from the kitchen into the dining area!")
 			elif GameManager.fire_spread_count == 2:
 				player.show_log_message("WARNING: Thick smoke and flames are engulfing the living room!")
-			elif GameManager.fire_spread_count >= 3:
+			elif GameManager.fire_spread_count == 3:
 				player.show_log_message("CRITICAL: The kitchen door is now completely blocked by fire!")
+			elif GameManager.fire_spread_count >= 4:
+				player.show_log_message("CRITICAL: The fire has breached the front door and is spreading into the corridor!")
 		
-	# Spawn a new adjacent fire towards the West (Living Room)
+	# Spawn a new adjacent fire towards the West (Living/Dining Room)
 	# Scale offset by growth_stage so it spreads progressively West
 	var spread_offset = Vector3(-1.5 * growth_stage, 0.0, randf_range(-0.5, 0.5))
-	spawn_adjacent_fire(spread_offset)
+	spawn_adjacent_fire(spread_offset, "_W")
 
-func spawn_adjacent_fire(offset: Vector3):
+	# Also spread Northward towards the corridor (positive Z) as the fire grows
+	if growth_stage >= 2:
+		var corridor_offset = Vector3(randf_range(-1.0, 1.0), 0.0, 1.8 * growth_stage)
+		spawn_adjacent_fire(corridor_offset, "_N")
+
+func spawn_adjacent_fire(offset: Vector3, suffix: String = ""):
 	var particle_name = name.replace("_Hazard", "")
 	var particles = get_parent().get_node_or_null(particle_name)
 	if not particles:
@@ -88,8 +95,8 @@ func spawn_adjacent_fire(offset: Vector3):
 	var new_hazard = duplicate()
 	
 	# Set unique names to avoid conflicts
-	new_hazard.name = name + "_Spread_" + str(GameManager.fire_spread_count)
-	new_particles.name = particle_name + "_Spread_" + str(GameManager.fire_spread_count)
+	new_hazard.name = name + "_Spread_" + str(GameManager.fire_spread_count) + suffix
+	new_particles.name = particle_name + "_Spread_" + str(GameManager.fire_spread_count) + suffix
 	
 	# Prevent the new hazard from growing and spawning more hazards
 	new_hazard.is_spread_copy = true
