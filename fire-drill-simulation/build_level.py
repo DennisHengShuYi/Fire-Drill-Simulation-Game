@@ -1144,7 +1144,7 @@ for floor_idx in range(9):
         z_sign = 1 if (floor_idx % 2 == 0) else -1
         rot_deg = z_sign * 25.01689  # Slope angle for 2.8m drop over 6.0m run
         
-        y_ramp = y_land - FLOOR_HEIGHT / 2
+        y_ramp = y_land - FLOOR_HEIGHT / 2 - 0.090618
         flt_z_center = 0.5
         flt_len = math.sqrt(FLIGHT_Z_LEN**2 + FLOOR_HEIGHT**2)
         
@@ -1259,6 +1259,27 @@ for f in range(1, 11):
     y_win = -22.6 + f * 3.2 + 0.5
     for x_win in [18.0, 25.0, 32.0]:
         csg_box(f"TowerC_Win_{f}_{int(x_win)}", OUT, x_win, y_win, -8.98, 1.2, 1.4, 0.05, M_ASPHALT, collision=False)
+
+# Background Condo Tower D (North-West background tower, non-enterable)
+csg_box("CondoTowerD", OUT, -32.0, -1.6, -22.0, 18.0, 42.0, 18.0, M_CONCRETE_DARK)
+for f in range(1, 13):
+    y_win = -22.6 + f * 3.0 + 0.5
+    for x_win in [-39.0, -32.0, -25.0]:
+        csg_box(f"TowerD_Win_{f}_{int(x_win)}", OUT, x_win, y_win, -12.98, 1.2, 1.4, 0.05, M_ASPHALT, collision=False)
+
+# Background Condo Tower E (South-West background tower, non-enterable)
+csg_box("CondoTowerE", OUT, -45.0, 1.4, 40.0, 16.0, 48.0, 16.0, M_DRYWALL)
+for f in range(1, 15):
+    y_win = -22.6 + f * 3.0 + 0.5
+    for z_win in [34.0, 40.0, 46.0]:
+        csg_box(f"TowerE_Win_{f}_{int(z_win)}", OUT, -36.98, y_win, z_win, 0.05, 1.4, 1.2, M_ASPHALT, collision=False)
+
+# Background Condo Tower F (South-East background tower, non-enterable)
+csg_box("CondoTowerF", OUT, 40.0, -4.6, -10.0, 16.0, 36.0, 16.0, M_CONCRETE)
+for f in range(1, 11):
+    y_win = -22.6 + f * 3.0 + 0.5
+    for z_win in [-16.0, -10.0, -4.0]:
+        csg_box(f"TowerF_Win_{f}_{int(z_win)}", OUT, 31.98, y_win, z_win, 0.05, 1.4, 1.2, M_ASPHALT, collision=False)
 
 # Add decorative windows for floors 1 to 7 on the South face (Z = 7.5)
 # Y levels correspond to floor heights: -22.4 base + floor offset + window height offset
