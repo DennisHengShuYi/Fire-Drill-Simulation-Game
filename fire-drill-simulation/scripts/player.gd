@@ -1005,8 +1005,8 @@ func show_hand_extinguisher():
 	hand_extinguisher_mesh.transform.basis = Basis(Vector3(1, 0, 0), deg_to_rad(15)) * Basis(Vector3(0, 1, 0), deg_to_rad(-15))
 
 func hide_hand_extinguisher():
-	if hand_extinguisher_mesh:
-		hand_extinguisher_mesh.queue_free()
+	if is_instance_valid(hand_extinguisher_mesh):
+		hand_extinguisher_mesh.free()
 		hand_extinguisher_mesh = null
 
 func spawn_mist_particles(fire_pos: Vector3):
