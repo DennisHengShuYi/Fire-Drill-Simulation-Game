@@ -8,26 +8,36 @@ const MAX_GROWTH_STAGES: int = 4
 var is_spread_copy: bool = false
 
 func _ready():
+	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
+	
 	if not is_spread_copy:
-		# Stagger the start slightly so not all fires grow at the exact same frame
-		time_since_spread = randf_range(-5.0, 0.0)
+		var t = Timer.new()
+		var stagger = randf_range(-5.0, 0.0)
+		t.one_shot = true
+		t.wait_time = max(0.1, SPREAD_INTERVAL + stagger)
+		t.timeout.connect(func():
+			if growth_stage < MAX_GROWTH_STAGES:
+				grow_fire()
+			if growth_stage < MAX_GROWTH_STAGES:
+				t.one_shot = false
+				t.wait_time = SPREAD_INTERVAL
+				t.start()
+		)
+		add_child(t)
+		t.start()
 
-func _physics_process(delta):
-	var player_in_this_fire = false
-	for body in get_overlapping_bodies():
-		if body.has_method("process_smoke_inhalation") and "in_fire_zone" in body:
-			tracked_player = body
-			player_in_this_fire = true
-			
-			var active_fires = body.get_meta("active_fires", [])
-			if not active_fires.has(self):
-				active_fires.append(self)
-				body.set_meta("active_fires", active_fires)
-			
-			body.in_fire_zone = true
-			break
-			
-	if not player_in_this_fire and tracked_player:
+func _on_body_entered(body):
+	if body.has_method("process_smoke_inhalation") and "in_fire_zone" in body:
+		tracked_player = body
+		var active_fires = body.get_meta("active_fires", [])
+		if not active_fires.has(self):
+			active_fires.append(self)
+			body.set_meta("active_fires", active_fires)
+		body.in_fire_zone = true
+
+func _on_body_exited(body):
+	if body == tracked_player:
 		if is_instance_valid(tracked_player):
 			var active_fires = tracked_player.get_meta("active_fires", [])
 			active_fires.erase(self)
@@ -35,14 +45,6 @@ func _physics_process(delta):
 			if active_fires.size() == 0:
 				tracked_player.in_fire_zone = false
 		tracked_player = null
-
-	# Handle fire growth and spread
-	if not is_spread_copy:
-		time_since_spread += delta
-		if time_since_spread >= SPREAD_INTERVAL:
-			time_since_spread = 0.0
-			if growth_stage < MAX_GROWTH_STAGES:
-				grow_fire()
 
 func grow_fire():
 	growth_stage += 1

@@ -36,6 +36,9 @@ var trapped_npc_quest_state: String = "none" # "none", "discovered", "resolved"
 var trapped_timer: float = 0.0
 var has_shouted_proximity: bool = false
 
+var proximity_area: Area3D = null
+var shout_timer: Timer = null
+
 func _ready():
 	original_rotation_y = rotation.y
 	original_position = global_position
@@ -49,23 +52,54 @@ func _ready():
 	
 	if is_locked_door:
 		has_trapped_npc = randf() < 0.7
-		trapped_timer = randf_range(0.0, 5.0)
+		if has_trapped_npc:
+			setup_locked_door_proximity()
 
-func _process(delta):
-	if is_locked_door and has_trapped_npc and trapped_npc_quest_state == "none":
-		var player = get_tree().current_scene.get_node_or_null("Player")
-		if player:
-			var dist = global_position.distance_to(player.global_position)
-			if dist < 12.0 and not has_shouted_proximity:
-				has_shouted_proximity = true
-				play_sound_3d("help_muffled")
-				trapped_timer = 0.0
-		
-		trapped_timer += delta
-		if trapped_timer >= 8.0:
-			trapped_timer = 0.0
-			if player and global_position.distance_to(player.global_position) < 15.0:
-				play_sound_3d("help_muffled")
+func setup_locked_door_proximity():
+	proximity_area = Area3D.new()
+	proximity_area.collision_mask = 1 # detect player (layer 1)
+	proximity_area.collision_layer = 0
+	add_child(proximity_area)
+	
+	var col_shape = CollisionShape3D.new()
+	var sphere = SphereShape3D.new()
+	sphere.radius = 12.0
+	col_shape.shape = sphere
+	proximity_area.add_child(col_shape)
+	
+	proximity_area.body_entered.connect(_on_proximity_body_entered)
+	proximity_area.body_exited.connect(_on_proximity_body_exited)
+	
+	shout_timer = Timer.new()
+	shout_timer.wait_time = 8.0
+	shout_timer.timeout.connect(_on_shout_timeout)
+	add_child(shout_timer)
+
+func _on_proximity_body_entered(body):
+	if body.name == "Player" and trapped_npc_quest_state == "none":
+		if not has_shouted_proximity:
+			has_shouted_proximity = true
+			play_sound_3d("help_muffled")
+		if shout_timer:
+			shout_timer.start()
+
+func _on_proximity_body_exited(body):
+	if body.name == "Player":
+		if shout_timer:
+			shout_timer.stop()
+
+func _on_shout_timeout():
+	if trapped_npc_quest_state == "none":
+		play_sound_3d("help_muffled")
+
+func cleanup_proximity():
+	if shout_timer:
+		shout_timer.stop()
+		shout_timer.queue_free()
+		shout_timer = null
+	if proximity_area:
+		proximity_area.queue_free()
+		proximity_area = null
 
 func get_interact_prompt() -> String:
 	if is_door and is_stairs:
@@ -319,6 +353,7 @@ func knock(player: CharacterBody3D):
 		
 	if trapped_npc_quest_state == "none":
 		trapped_npc_quest_state = "discovered"
+		cleanup_proximity()
 		play_sound_3d("help_muffled")
 		player.show_log_message("Muffled Voice: 'Help! I'm trapped! The fire block is outside my kitchen and the door lock is jammed!'")
 		

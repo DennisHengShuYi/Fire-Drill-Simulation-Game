@@ -28,7 +28,7 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/handheld/orientation=0
+window/handheld/orientation=3
 
 [input]
 
@@ -55,6 +55,9 @@ dilemma_2={
 
 [rendering]
 
+scaling_3d/mode=0
+scaling_3d/scale=0.75
+lights_and_shadows/use_physical_light_units=false
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"

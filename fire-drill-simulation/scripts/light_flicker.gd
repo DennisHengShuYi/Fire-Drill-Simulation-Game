@@ -22,12 +22,19 @@ func _ready():
 	if override_color and not is_emergency_light:
 		light_color = flicker_color
 
+var _tick: float = 0.0
+
 func _process(delta):
+	time += delta * flicker_speed
+	_tick += delta
+	if _tick < 0.05:
+		return
+	_tick = 0.0
+
 	if is_emergency_light:
 		if GameManager.alarm_triggered:
 			# Pulse green
 			light_color = Color(0.2, 0.9, 0.3)
-			time += delta * flicker_speed
 			var flicker = sin(time) * cos(time * 0.7) * sin(time * 1.5)
 			flicker = (flicker + 1.0) / 2.0
 			light_energy = lerp(min_energy, max_energy, flicker)
@@ -36,7 +43,6 @@ func _process(delta):
 			light_color = Color(1.0, 1.0, 1.0)
 			light_energy = original_energy
 	else:
-		time += delta * flicker_speed
 		var flicker = sin(time) * cos(time * 0.7) * sin(time * 1.5)
 		flicker = (flicker + 1.0) / 2.0
 		light_energy = lerp(min_energy, max_energy, flicker)

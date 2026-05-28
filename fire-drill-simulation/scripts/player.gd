@@ -91,18 +91,22 @@ var stamina_bar: ProgressBar = null
 var shown_tips: Dictionary = {}
 var tip_check_timer: float = 0.0
 
+func set_mouse_mode_safe(mode: int):
+	if OS.get_name() not in ["Android", "iOS"]:
+		Input.mouse_mode = mode as Input.MouseMode
+
 func _ready():
 	# BUG 3 companion: keep this node processing even when the tree is paused
 	# so ESC and the quit button still work inside the pause panel.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	if OS.get_name() != "Android" and OS.get_name() != "iOS":
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	set_mouse_mode_safe(Input.MOUSE_MODE_CAPTURED)
 	
 	if OS.get_name() == "Android" or OS.get_name() == "iOS":
-		var touch_ui = load("res://scenes/touch_controls.tscn").instantiate()
-		add_child(touch_ui)
-		touch_ui.player = self
+		var hud = load("res://scenes/mobile_hud.tscn").instantiate()
+		add_child(hud)
+		hud.player = self
+		mouse_captured = false
 		if is_instance_valid(prompt_label):
 			prompt_label.visible = false
 
@@ -217,8 +221,6 @@ func _input(event):
 	var look_delta = Vector2.ZERO
 	if event is InputEventMouseMotion and mouse_captured:
 		look_delta = event.relative
-	elif event is InputEventScreenDrag and not phone_active:
-		look_delta = event.relative * 0.5   # reduce sensitivity for touch
 	if look_delta != Vector2.ZERO:
 		rotate_y(-look_delta.x * mouse_sensitivity)
 		camera.rotate_x(-look_delta.y * mouse_sensitivity)
@@ -227,15 +229,13 @@ func _input(event):
 func toggle_pause():
 	is_paused = not is_paused
 	if is_paused:
-		if OS.get_name() != "Android" and OS.get_name() != "iOS":
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		set_mouse_mode_safe(Input.MOUSE_MODE_VISIBLE)
 		get_tree().paused = true
 		if pause_panel:
 			_update_pause_objectives()
 			pause_panel.visible = true
 	else:
-		if OS.get_name() != "Android" and OS.get_name() != "iOS":
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		set_mouse_mode_safe(Input.MOUSE_MODE_CAPTURED)
 		get_tree().paused = false
 		if pause_panel:
 			pause_panel.visible = false
@@ -616,8 +616,7 @@ func teleport_to_outside():
 
 func open_phone_dialer():
 	phone_active = true
-	if OS.get_name() != "Android" and OS.get_name() != "iOS":
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	set_mouse_mode_safe(Input.MOUSE_MODE_VISIBLE)
 	phone_panel.visible = true
 	dialed_number = ""
 	call_state = 0
@@ -663,8 +662,7 @@ func press_number(num: String):
 					if not phone_active: return
 					phone_active = false
 					phone_panel.visible = false
-					if OS.get_name() != "Android" and OS.get_name() != "iOS":
-						Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+					set_mouse_mode_safe(Input.MOUSE_MODE_CAPTURED)
 					has_called_bomba = true
 					var ladder = get_tree().root.find_child("SafetyLadder", true, false)
 					if ladder:
@@ -680,8 +678,7 @@ func press_number(num: String):
 					if not phone_active: return
 					phone_active = false
 					phone_panel.visible = false
-					if OS.get_name() != "Android" and OS.get_name() != "iOS":
-						Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+					set_mouse_mode_safe(Input.MOUSE_MODE_CAPTURED)
 					show_log_message("RESCUE TEAM BREACHING! Waiting for evacuation...")
 					await get_tree().create_timer(2.0).timeout
 					GameManager.trigger_victory()
@@ -694,8 +691,7 @@ func press_number(num: String):
 					if not phone_active: return
 					phone_active = false
 					phone_panel.visible = false
-					if OS.get_name() != "Android" and OS.get_name() != "iOS":
-						Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+					set_mouse_mode_safe(Input.MOUSE_MODE_CAPTURED)
 			else:
 				phone_instructions.text = "You: 'There is a massive fire at Unit 8A of the Condominium! The kitchen is on fire and smoke is filling the hallway!'"
 				GameManager.escape_time = time_limit - current_time
@@ -706,8 +702,7 @@ func press_number(num: String):
 				if not phone_active: return
 				phone_active = false
 				phone_panel.visible = false
-				if OS.get_name() != "Android" and OS.get_name() != "iOS":
-					Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+				set_mouse_mode_safe(Input.MOUSE_MODE_CAPTURED)
 				GameManager.trigger_victory()
 		elif num == "2":
 			phone_display.text = "ERR"
@@ -1323,8 +1318,7 @@ var dilemma_panel: Panel = null
 
 func show_dilemma_menu(question: String, opt1_text: String, opt2_text: String, callback_obj: Object, callback_func: String):
 	dilemma_active = true
-	if OS.get_name() != "Android" and OS.get_name() != "iOS":
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	set_mouse_mode_safe(Input.MOUSE_MODE_VISIBLE)
 	
 	if dilemma_panel:
 		dilemma_panel.queue_free()
@@ -1386,8 +1380,7 @@ func show_dilemma_menu(question: String, opt1_text: String, opt2_text: String, c
 		dilemma_active = false
 		dilemma_panel.queue_free()
 		dilemma_panel = null
-		if OS.get_name() != "Android" and OS.get_name() != "iOS":
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		set_mouse_mode_safe(Input.MOUSE_MODE_CAPTURED)
 		if callback_obj and callback_obj.has_method(callback_func):
 			callback_obj.call(callback_func, self, 1)
 	)
@@ -1402,8 +1395,7 @@ func show_dilemma_menu(question: String, opt1_text: String, opt2_text: String, c
 		dilemma_active = false
 		dilemma_panel.queue_free()
 		dilemma_panel = null
-		if OS.get_name() != "Android" and OS.get_name() != "iOS":
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		set_mouse_mode_safe(Input.MOUSE_MODE_CAPTURED)
 		if callback_obj and callback_obj.has_method(callback_func):
 			callback_obj.call(callback_func, self, 2)
 	)

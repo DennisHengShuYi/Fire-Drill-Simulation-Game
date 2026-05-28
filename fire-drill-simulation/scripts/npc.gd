@@ -49,6 +49,9 @@ var is_talking: bool = false
 var suitcase_choice: int = 0
 var suitcase_mesh: MeshInstance3D = null
 
+var _queue_check_timer: float = 0.0
+var _cached_speed_mult: float = 1.0
+
 # ── Mesh materials ────────────────────────────────────────────────────────────
 # A bright cyan capsule body so the player can spot NPCs easily in the dim
 # stairwell.  We build it in _ready() because sub-resources only exist at
@@ -200,21 +203,12 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = -0.5   # small push to stay on ramp
 
-	# Queue-detection: scan other NPCs ahead, slow down to avoid stacking
-	var speed_mult : float = 1.0
-	var forward_xz = (flat_target - flat_self).normalized()
-	for other in get_tree().get_nodes_in_group("npcs"):
-		if other == self:
-			continue
-		var to_other = other.global_position - global_position
-		if abs(to_other.y) > 2.0:
-			continue
-		var to_other_xz = Vector3(to_other.x, 0.0, to_other.z)
-		if to_other_xz.length() < QUEUE_RADIUS:
-			var dot = forward_xz.dot(to_other_xz.normalized())
-			if dot > 0.4:   # other NPC is ahead of us
-				speed_mult = QUEUE_SPEED_MUL
-				break
+	# Queue-detection: scan other NPCs ahead, slow down to avoid stacking (throttled to 0.2s)
+	_queue_check_timer -= delta
+	if _queue_check_timer <= 0.0:
+		_queue_check_timer = 0.2
+		_cached_speed_mult = _calculate_queue_speed()
+	var speed_mult = _cached_speed_mult
 
 	# Horizontal movement toward waypoint
 	var current_npc_speed = NPC_SPEED
@@ -255,3 +249,24 @@ func resolve_suitcase(choice: int):
 		var player = get_tree().current_scene.get_node_or_null("Player")
 		if player:
 			player.show_log_message("Resident: 'I can't leave my valuables! I'll carry them down!'")
+
+func _calculate_queue_speed() -> float:
+	if current_waypoint >= FULL_WAYPOINTS.size():
+		return 1.0
+	var target : Vector3 = FULL_WAYPOINTS[current_waypoint]
+	var flat_self   = Vector3(global_position.x, 0.0, global_position.z)
+	var flat_target = Vector3(target.x, 0.0, target.z)
+	var forward_xz = (flat_target - flat_self).normalized()
+	
+	for other in get_tree().get_nodes_in_group("npcs"):
+		if not is_instance_valid(other) or other == self:
+			continue
+		var to_other = other.global_position - global_position
+		if abs(to_other.y) > 2.0:
+			continue
+		var to_other_xz = Vector3(to_other.x, 0.0, to_other.z)
+		if to_other_xz.length() < QUEUE_RADIUS:
+			var dot = forward_xz.dot(to_other_xz.normalized())
+			if dot > 0.4:   # other NPC is ahead of us
+				return QUEUE_SPEED_MUL
+	return 1.0
