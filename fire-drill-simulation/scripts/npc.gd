@@ -38,10 +38,16 @@ var FULL_WAYPOINTS : Array = [
 
 # Which waypoint index this NPC starts at (set by build_level.py)
 @export var start_waypoint : int = 0
+@export var is_suitcase_npc: bool = false
 
 var current_waypoint : int = 0
 var push_cooldown    : float = 0.0
 var _done            : bool  = false
+
+var suitcase_resolved: bool = false
+var is_talking: bool = false
+var suitcase_choice: int = 0
+var suitcase_mesh: MeshInstance3D = null
 
 # ── Mesh materials ────────────────────────────────────────────────────────────
 # A bright cyan capsule body so the player can spot NPCs easily in the dim
@@ -51,6 +57,36 @@ var _done            : bool  = false
 func _ready() -> void:
 	add_to_group("npcs")
 	current_waypoint = start_waypoint
+
+	if is_suitcase_npc:
+		var custom_waypoints = [
+			Vector3(14.0, 0.1, 5.0),
+			Vector3(0.0, 0.1, 5.0),
+			Vector3(-12.5, 0.1, 5.0),
+		]
+		var new_wps = []
+		new_wps.append_array(custom_waypoints)
+		new_wps.append_array(FULL_WAYPOINTS)
+		FULL_WAYPOINTS = new_wps
+		current_waypoint = 0
+
+		# Ignore collision with the interactable child StaticBody3D to prevent self-propulsion physics glitch
+		var child = get_node_or_null("InteractableChild")
+		if child:
+			add_collision_exception_with(child)
+
+		# Create suitcase mesh
+		var box = BoxMesh.new()
+		box.size = Vector3(0.5, 0.4, 0.2)
+		var mat = StandardMaterial3D.new()
+		mat.albedo_color = Color(0.4, 0.25, 0.15) # Brown suitcase
+		mat.roughness = 0.8
+		box.material = mat
+		suitcase_mesh = MeshInstance3D.new()
+		suitcase_mesh.name = "Suitcase"
+		suitcase_mesh.mesh = box
+		suitcase_mesh.position = Vector3(0.35, 0.5, 0.0) # Hold to the side
+		add_child(suitcase_mesh)
 
 	# Add CapsuleShape3D collision
 	var col_shape = CapsuleShape3D.new()
@@ -102,7 +138,8 @@ func _ready() -> void:
 	add_child(area)
 
 	collision_layer = 4   # layer 3 — NPC objects
-	collision_mask  = 3   # hit world (1) + player (2)
+	collision_mask  = 1   # hit world (1) only, prevents self-propulsion with interactable child
+
 
 # ── Called when a body (player) enters the proximity sphere ──────────────────
 func _on_body_entered(body: Node) -> void:
@@ -127,6 +164,16 @@ func _play_voice_alert() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_inside_tree():
 		return
+	if not GameManager.alarm_triggered:
+		velocity = Vector3.ZERO
+		move_and_slide()
+		return
+		
+	if is_suitcase_npc and is_talking:
+		velocity = Vector3.ZERO
+		move_and_slide()
+		return
+
 	if push_cooldown > 0.0:
 		push_cooldown -= delta
 
@@ -170,9 +217,14 @@ func _physics_process(delta: float) -> void:
 				break
 
 	# Horizontal movement toward waypoint
+	var current_npc_speed = NPC_SPEED
+	if is_suitcase_npc:
+		if not suitcase_resolved or suitcase_choice == 2:
+			current_npc_speed = 0.8
+
 	var dir_xz = (flat_target - flat_self).normalized()
-	velocity.x = dir_xz.x * NPC_SPEED * speed_mult
-	velocity.z = dir_xz.z * NPC_SPEED * speed_mult
+	velocity.x = dir_xz.x * current_npc_speed * speed_mult
+	velocity.z = dir_xz.z * current_npc_speed * speed_mult
 
 	move_and_slide()
 
@@ -181,3 +233,25 @@ func _physics_process(delta: float) -> void:
 	if move_xz.length() > 0.05:
 		var look_target = global_position + move_xz
 		look_at(look_target, Vector3.UP)
+
+func resolve_suitcase(choice: int):
+	suitcase_resolved = true
+	suitcase_choice = choice
+	is_talking = false
+	if choice == 1:
+		if is_instance_valid(suitcase_mesh):
+			suitcase_mesh.visible = false
+			# Spawn a dropped suitcase on the ground
+			var ground_case = MeshInstance3D.new()
+			ground_case.mesh = suitcase_mesh.mesh
+			ground_case.material_override = suitcase_mesh.material_override
+			get_parent().add_child(ground_case)
+			ground_case.global_position = global_position + Vector3(0.0, 0.2, 0.0)
+			ground_case.rotation = rotation
+		var player = get_tree().current_scene.get_node_or_null("Player")
+		if player:
+			player.show_log_message("Resident: 'You're right, my life is more important! I'll leave the bags!'")
+	else:
+		var player = get_tree().current_scene.get_node_or_null("Player")
+		if player:
+			player.show_log_message("Resident: 'I can't leave my valuables! I'll carry them down!'")

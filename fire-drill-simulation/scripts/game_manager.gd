@@ -18,6 +18,10 @@ var fire_spread_count: int = 0
 var neighbor_quest_attempted: bool = false
 var saved_neighbor: bool = false
 var neighbor_left_behind: bool = false
+var alarm_triggered: bool = false
+var corrected_npc: bool = false
+var ignored_npc: bool = false
+var sealed_door: bool = false
 
 # Escape time (seconds elapsed when 999 is called)
 var escape_time: float = 0.0
@@ -43,6 +47,10 @@ func reset_state():
 	neighbor_quest_attempted = false
 	saved_neighbor = false
 	neighbor_left_behind = false
+	alarm_triggered = false
+	corrected_npc = false
+	ignored_npc = false
+	sealed_door = false
 	escape_time = 0.0
 	_game_over_triggered = false
 

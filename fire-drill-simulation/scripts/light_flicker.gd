@@ -10,14 +10,33 @@ extends OmniLight3D
 @export var override_color: bool = true
 @export var flicker_color: Color = Color(1.0, 0.45, 0.08)
 
+@export var is_emergency_light: bool = false
+var original_energy: float = 1.0
+var original_color: Color
+
 var time: float = 0.0
 
 func _ready():
-	if override_color:
+	original_energy = light_energy
+	original_color = light_color
+	if override_color and not is_emergency_light:
 		light_color = flicker_color
 
 func _process(delta):
-	time += delta * flicker_speed
-	var flicker = sin(time) * cos(time * 0.7) * sin(time * 1.5)
-	flicker = (flicker + 1.0) / 2.0
-	light_energy = lerp(min_energy, max_energy, flicker)
+	if is_emergency_light:
+		if GameManager.alarm_triggered:
+			# Pulse green
+			light_color = Color(0.2, 0.9, 0.3)
+			time += delta * flicker_speed
+			var flicker = sin(time) * cos(time * 0.7) * sin(time * 1.5)
+			flicker = (flicker + 1.0) / 2.0
+			light_energy = lerp(min_energy, max_energy, flicker)
+		else:
+			# Static normal white light
+			light_color = Color(1.0, 1.0, 1.0)
+			light_energy = original_energy
+	else:
+		time += delta * flicker_speed
+		var flicker = sin(time) * cos(time * 0.7) * sin(time * 1.5)
+		flicker = (flicker + 1.0) / 2.0
+		light_energy = lerp(min_energy, max_energy, flicker)

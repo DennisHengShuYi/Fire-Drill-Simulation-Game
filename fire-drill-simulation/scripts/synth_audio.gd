@@ -1,6 +1,7 @@
 extends AudioStreamPlayer
 
 @export var synth_type: String = "alarm"
+@export var play_on_start: bool = true
 
 var playback: AudioStreamGeneratorPlayback
 var phase: float = 0.0
@@ -21,7 +22,8 @@ func _ready():
 			stream = res
 			if synth_type == "alarm" and stream is AudioStreamMP3:
 				stream.loop = true
-			play()
+			if play_on_start:
+				play()
 			return
 			
 	# Fallback to programmatic synthesis
@@ -29,7 +31,8 @@ func _ready():
 	gen.mix_rate = 22050
 	gen.buffer_length = 0.1
 	stream = gen
-	play()
+	if play_on_start:
+		play()
 	playback = get_stream_playback()
 
 func _process(_delta):
@@ -85,6 +88,14 @@ func _process(_delta):
 				var volume = max(0.0, 1.0 - pulse_timer * 2.5) # sizzle sound over 0.4 seconds
 				phase += 2.0 * PI * 180.0 / mix_rate
 				sample = (randf() * 2.0 - 1.0) * 0.3 * volume + sin(phase) * 0.08 * volume
+				if volume <= 0.0:
+					queue_free()
+					return
+			elif synth_type == "wrong":
+				pulse_timer += 1.0 / mix_rate
+				var volume = max(0.0, 1.0 - pulse_timer * 4.0)
+				phase += 2.0 * PI * 150.0 / mix_rate
+				sample = sin(phase) * 0.2 * volume
 				if volume <= 0.0:
 					queue_free()
 					return

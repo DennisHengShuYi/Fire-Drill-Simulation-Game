@@ -1,0 +1,64 @@
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/player.gd:180)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+ERROR: Failed to load script "res://scripts/player.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/interactable.gd:93)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+ERROR: Failed to load script "res://scripts/interactable.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/light_flicker.gd:27)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+ERROR: Failed to load script "res://scripts/light_flicker.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/elevator.gd:18)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+ERROR: Failed to load script "res://scripts/elevator.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/fire_area.gd:63)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+ERROR: Failed to load script "res://scripts/fire_area.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/npc.gd:167)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+ERROR: Failed to load script "res://scripts/npc.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+SCRIPT ERROR: Compile Error: Identifier not found: GameManager
+   at: GDScript::reload (res://scripts/npc_spawner.gd:15)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+ERROR: Failed to load script "res://scripts/npc_spawner.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:4)
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:23)
+ERROR: Condition "!is_inside_tree()" is true. Returning: Transform3D()
+   at: get_global_transform (scene/3d/node_3d.cpp:642)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scratch/verify_ladder.gd:50)

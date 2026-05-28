@@ -19,6 +19,12 @@ extends StaticBody3D
 @export var is_locked_door: bool = false
 @export var is_npc: bool = false
 @export var is_extinguisher: bool = false
+@export var is_sealed: bool = false
+@export var is_suitcase_npc: bool = false
+@export var is_alarm_pull: bool = false
+@export var resolved: bool = false
+@export var is_phone_item: bool = false
+@export var is_safety_ladder: bool = false
 var extinguisher_used: bool = false
 
 var original_rotation_y: float = 0.0
@@ -59,7 +65,10 @@ func get_interact_prompt() -> String:
 	if is_door and is_stairs:
 		return "[E] Open Fire Exit"
 	elif is_door:
-		return "[E] Open Door" + (", [F] Feel Door" if can_feel and not door_opened else "")
+		var prompt = "[E] Open Door" + (", [F] Feel Door" if can_feel and not door_opened else "")
+		if not door_opened and name.to_lower().contains("bedroom") and not is_sealed:
+			prompt += ", [X] Seal Door (requires Wet Towel)"
+		return prompt
 	elif is_lift:
 		return "[E] Press Lift Button"
 	elif is_stairs:
@@ -80,6 +89,20 @@ func get_interact_prompt() -> String:
 		return "[E] Pick up Fire Extinguisher"
 	elif is_npc:
 		return prompt_message if prompt_message != "Object" else "[E] Report to building warden"
+	elif is_alarm_pull:
+		if GameManager.alarm_triggered:
+			return "Manual Call Point (Activated)"
+		return "[E] Pull Alarm (Manual Call Point)"
+	elif is_suitcase_npc:
+		if resolved:
+			return "Evacuee (Evacuating)"
+		return "[E] Speak to resident"
+	elif is_phone_item:
+		return "[E] Pick up Mobile Phone"
+	elif is_safety_ladder:
+		return "[E] Climb down Safety Ladder"
+	if prompt_message.begins_with("[E]"):
+		return prompt_message
 	return "[E] " + prompt_message
 
 # BUG 1 FIX: when BOTH is_door and is_stairs are true (GroundExitDoor),
@@ -117,6 +140,29 @@ func interact(player: CharacterBody3D):
 	elif is_npc:
 		player.show_log_message("Warden: 'Unit 8A confirmed evacuated. Now call BOMBA at 999 immediately!'")
 		GameManager.reported_to_warden = true
+	elif is_alarm_pull:
+		if GameManager.alarm_triggered:
+			return
+		trigger_alarm(player)
+	elif is_suitcase_npc:
+		if resolved:
+			return
+		var npc = get_parent()
+		if npc and "is_talking" in npc:
+			npc.is_talking = true
+		player.show_dilemma_menu(
+			"This resident is trying to carry a heavy suitcase down the stairwell! This will block the evacuation path.",
+			"Drop suitcase & evacuate immediately (Correct)",
+			"Ignore them and run past (Incorrect)",
+			self,
+			"resolve_suitcase_dilemma"
+		)
+	elif is_phone_item:
+		player.has_mobile_phone = true
+		player.show_log_message("Picked up Mobile Phone! Press [P] to call emergency from a safe room or balcony.")
+		queue_free()
+	elif is_safety_ladder:
+		player.start_climbing_ladder()
 
 func feel(player: CharacterBody3D) -> String:
 	if not can_feel or door_opened:
@@ -269,13 +315,16 @@ func knock(player: CharacterBody3D):
 		trapped_npc_quest_state = "discovered"
 		play_sound_3d("help_muffled")
 		player.show_log_message("Muffled Voice: 'Help! I'm trapped! The fire block is outside my kitchen and the door lock is jammed!'")
-		player.dilemma_active = true
-		player.dilemma_door = self
-	elif trapped_npc_quest_state == "discovered":
-		player.dilemma_active = true
-		player.dilemma_door = self
+		
+	player.show_dilemma_menu(
+		"Help trapped neighbor in Unit 8C?",
+		"Wait & Rescue (costs 15s, risk smoke inhalation)",
+		"Advise to use Balcony Exit (safe protocol)",
+		self,
+		"resolve_neighbor_dilemma"
+	)
 
-func resolve_dilemma(player: CharacterBody3D, choice: int):
+func resolve_neighbor_dilemma(player: CharacterBody3D, choice: int):
 	trapped_npc_quest_state = "resolved"
 	GameManager.neighbor_quest_attempted = true
 	
@@ -296,4 +345,22 @@ func resolve_dilemma(player: CharacterBody3D, choice: int):
 		GameManager.neighbor_left_behind = true
 		play_sound_3d("help_muffled")
 		player.show_log_message("You: 'Evacuate via balcony!' Neighbor: 'Okay, I'll use the balcony exit!'")
+
+func resolve_suitcase_dilemma(player: CharacterBody3D, choice: int):
+	resolved = true
+	var npc = get_parent()
+	if npc and npc.has_method("resolve_suitcase"):
+		npc.resolve_suitcase(choice)
+	if choice == 1:
+		GameManager.corrected_npc = true
+	else:
+		GameManager.ignored_npc = true
+
+func trigger_alarm(player: CharacterBody3D):
+	GameManager.alarm_triggered = true
+	var alarm = get_tree().current_scene.get_node_or_null("AlarmAudio")
+	if alarm:
+		alarm.play()
+	play_sound_3d("click")
+	player.show_log_message("FIRE ALARM ACTIVATED! Evacuation in progress!")
 

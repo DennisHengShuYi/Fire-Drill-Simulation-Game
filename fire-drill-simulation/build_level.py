@@ -134,6 +134,7 @@ M_BALCONY_SIGN    = mat("Mat_BalconySign",   color(0.9, 0.85, 0.1),
 M_SMOKE           = mat("Mat_Smoke",         color(0.15, 0.15, 0.15, 0.55),
                          transparency=1)
 M_SIGN_POST       = mat("Mat_SignPost",      color(0.5, 0.5, 0.5), roughness=0.6)
+M_SAFETY_YELLOW   = mat("Mat_SafetyYellow",  color(0.9, 0.8, 0.1), roughness=0.3)
 
 # Particle System Resources
 add_sub("Mat_FireParticle", "StandardMaterial3D", [
@@ -214,6 +215,7 @@ SHP_GUARD     = box_shape("Shp_Guard",     0.5, 1.6, 0.5)
 SHP_PHONE     = box_shape("Shp_Phone",     0.4, 1.6, 0.4)
 SHP_EXTINGUISH= box_shape("Shp_Extinguish",0.2, 0.6, 0.2)
 MESH_EXTINGUISH = add_sub("Mesh_Extinguish", "BoxMesh", ['size = Vector3(0.2, 0.6, 0.2)'])
+SHP_MOBILE = box_shape("Shp_Mobile", 0.3, 0.3, 0.3)
 
 
 # ── SCENE HEADER ─────────────────────────────────────────────────────────────
@@ -239,7 +241,7 @@ def csg_box(name, parent, px, py, pz, sx, sy, sz, mat_id, collision=True, extra_
     node(name, "CSGBox3D", parent, props)
 
 def omni_light(name, parent, px, py, pz, energy, col, flicker=False,
-               fl_min=None, fl_max=None, fl_speed=12.0, shadow=False, omni_range=6.0):
+               fl_min=None, fl_max=None, fl_speed=12.0, shadow=False, omni_range=6.0, is_emerg=False):
     props = [
         f'transform = {tf(px, py, pz)}',
         f'light_color = {col}',
@@ -248,13 +250,15 @@ def omni_light(name, parent, px, py, pz, energy, col, flicker=False,
     ]
     if shadow:
         props.append('shadow_enabled = true')
-    if flicker:
+    if flicker or is_emerg:
         props.append(f'script = ExtResource("4_light_flicker")')
         if fl_min is not None:
             props.append(f'min_energy = {fl_min}')
         if fl_max is not None:
             props.append(f'max_energy = {fl_max}')
         props.append(f'flicker_speed = {fl_speed}')
+        if is_emerg:
+            props.append('is_emergency_light = true')
     node(name, "OmniLight3D", parent, props)
 
 def door_static(name, parent, px, py, pz,
@@ -505,6 +509,7 @@ node("DirectionalLight3D", "DirectionalLight3D", ".", [
 node("AlarmAudio", "AudioStreamPlayer", ".", [
     f'script = ExtResource("5_synth_audio")',
     'synth_type = "alarm"',
+    'play_on_start = false',
 ])
 
 # Player (instanced from player.tscn)
@@ -558,10 +563,27 @@ csg_box("WallNorth", HW, -0.5, 1.4, -11.1, 3.0, 2.8, 0.2, M_DRYWALL2)
 smoke_particle("HallwaySmoke", HW, -0.5, 2.5, -8.0, vel=0.2, lifetime=4.0)
 
 # Props in Master Bedroom
-csg_box("Bed", MB, -4.6, 0.3, -9.4, 1.8, 0.6, 2.2, M_WOOD_PROP, collision=True)
-csg_box("BedMattress", MB, -4.6, 0.62, -9.4, 1.7, 0.15, 2.1, M_FABRIC, collision=False)
+csg_box("Bed", MB, -3.8, 0.3, -9.4, 1.8, 0.6, 2.2, M_WOOD_PROP, collision=True)
+csg_box("BedMattress", MB, -3.8, 0.62, -9.4, 1.7, 0.15, 2.1, M_FABRIC, collision=False)
 csg_box("Desk", MB, -7.8, 0.4, -9.8, 1.2, 0.8, 1.4, M_WOOD_PROP)
 csg_box("Chair", MB, -7.8, 0.4, -8.5, 0.6, 0.8, 0.6, M_FABRIC)
+
+# Mobile Phone Item on the desk
+node("MobilePhone", "StaticBody3D", MB, [
+    f'transform = {tf(-7.8, 0.8, -9.8)}',
+    'collision_layer = 2',
+    f'script = ExtResource("2_interactable")',
+    'is_phone_item = true',
+    'prompt_message = "Pick up Mobile Phone"',
+])
+node("CollisionShape3D", "CollisionShape3D", f"{MB}/MobilePhone", [
+    f'shape = SubResource("{SHP_MOBILE}")',
+])
+node("Mesh", "CSGBox3D", f"{MB}/MobilePhone", [
+    f'transform = {tf(0, 0, 0)}',
+    f'size = Vector3(0.1, 0.02, 0.18)',
+    f'material = SubResource("{M_PHONE_BOX}")',
+])
 
 # Light smoke seeping into Master Bedroom
 smoke_particle("MasterBedroomSmoke", MB, -5.5, 2.5, -8.0, vel=0.15, lifetime=3.5)
@@ -853,7 +875,8 @@ FY = G + "/Foyer"
 csg_box("Floor", FY, 0.0, -0.05, 2.25, 3.0, 0.1, 2.5, M_WOOD_FLOOR)
 csg_box("Ceiling", FY, 0.0, 2.75, 2.25, 3.0, 0.1, 2.5, M_DRYWALL2)
 csg_box("WallWest", FY, -1.6, 1.4, 2.25, 0.2, 2.8, 2.5, M_DRYWALL2)
-csg_box("WallEast", FY, 1.6, 1.4, 2.25, 0.2, 2.8, 2.5, M_DRYWALL2)
+# Note: WallEast removed — it clipped 10 cm into the Balcony (X=1.5) and had
+# no light source, causing a large black plane visible from the balcony.
 
 # Smoke filling the Foyer from Living Room
 smoke_particle("FoyerSmoke", FY, 0.0, 2.5, 2.25, vel=0.2, lifetime=4.0)
@@ -866,6 +889,39 @@ csg_box("Floor", BL, 3.0, -0.05, 2.25, 3.0, 0.1, 2.5, M_OUTDOOR_TILE)
 # Railings (south and east)
 csg_box("RailSouth", BL, 3.0, 0.5, 3.55, 3.0, 1.0, 0.1, M_RAILING, collision=True)
 csg_box("RailEast", BL, 4.55, 0.5, 2.25, 0.1, 1.0, 2.5, M_RAILING, collision=True)
+
+# Safety Ladder (initially hidden/inactive)
+node("SafetyLadder", "StaticBody3D", BL, [
+    f'transform = {tf(3.0, 0.5, 3.80)}',
+    'collision_layer = 0',
+    f'script = ExtResource("2_interactable")',
+    'prompt_message = "Climb down Safety Ladder"',
+    'is_safety_ladder = true',
+    'visible = false',
+])
+node("CollisionShape3D", "CollisionShape3D", f"{BL}/SafetyLadder", [
+    f'shape = SubResource("{SHP_PHONE}")',
+])
+node("MeshLeft", "CSGBox3D", f"{BL}/SafetyLadder", [
+    f'transform = {tf(-0.35, -11.0, 0)}',
+    f'size = Vector3(0.06, 24.0, 0.06)',
+    f'material = SubResource("{M_SAFETY_YELLOW}")',
+])
+node("MeshRight", "CSGBox3D", f"{BL}/SafetyLadder", [
+    f'transform = {tf(0.35, -11.0, 0)}',
+    f'size = Vector3(0.06, 24.0, 0.06)',
+    f'material = SubResource("{M_SAFETY_YELLOW}")',
+])
+for ry_idx in range(58):
+    ry = -22.0 + ry_idx * 0.4
+    node(f"Rung_{ry_idx}", "CSGBox3D", f"{BL}/SafetyLadder", [
+        f'transform = {tf(0, ry, 0)}',
+        f'size = Vector3(0.7, 0.04, 0.04)',
+        f'material = SubResource("{M_SAFETY_YELLOW}")',
+    ])
+
+# Balcony outdoor light — needed so the safety-yellow ladder is visible at night
+omni_light("BalconyLight", BL, 3.0, 2.2, 2.25, 2.0, color(0.65, 0.78, 1.0), omni_range=6.0)
 
 # Warning sign prop
 node("BalconySign", "StaticBody3D", G, [
@@ -893,9 +949,13 @@ csg_box("CorridorCeiling", SC, 2.45, 2.85, 5.0, 25.1, 0.1, 3.0, M_DRYWALL)
 # North wall split around foyer opening (X = [-1.5, 1.5])
 # West segment: X = [-10.1, -1.5] (width 8.6)
 csg_box("WallNorth_W", SC, -5.8, 1.4, 3.4, 8.6, 2.8, 0.2, M_DRYWALL)
-# East segments split around Unit 8B door (X = [10.5, 11.5]) and Unit 8C door (X = [13.5, 14.5]):
-# Segment 1 (foyer to 8B door): X = [1.5, 10.5] (width 9.0)
-csg_box("WallNorth_E1", SC, 6.0, 1.4, 3.4, 9.0, 2.8, 0.2, M_DRYWALL)
+# East segments split around balcony opening (X=[1.5,4.5]), Unit 8B door (X=[10.5,11.5]) and Unit 8C door (X=[13.5,14.5]):
+# IMPORTANT: X=[1.5,4.5] left open — this is the balcony slab. Previous code had
+# no gap here which created the black wall blocking the balcony view.
+# Lintel above balcony opening: X=[1.5,4.5], Y=[2.0, 2.8]
+csg_box("WallNorth_BalconyLintel", SC, 3.0, 2.4, 3.4, 3.0, 0.8, 0.2, M_DRYWALL)
+# Segment 1 (balcony east edge to 8B door): X=[4.5, 10.5] (width 6.0, center 7.5)
+csg_box("WallNorth_E1", SC, 7.5, 1.4, 3.4, 6.0, 2.8, 0.2, M_DRYWALL)
 # Above Unit 8B Door: X = [10.5, 11.5] (width 1.0, Y = [2.0, 2.8])
 csg_box("WallNorth_E_8B_Top", SC, 11.0, 2.4, 3.4, 1.0, 0.8, 0.2, M_DRYWALL)
 # Segment 2 (between 8B and 8C doors): X = [11.5, 13.5] (width 2.0)
@@ -925,7 +985,31 @@ smoke_particle("CorridorSmoke3", SC, 10, 1.5, 5.0, col=(0.16,0.14,0.11,0.3), vel
 # Corridor lights (emergency green flicker)
 for i, cx in enumerate([-1, 5, 10]):
     omni_light(f"CorrLight_{i+1}", SC, cx, 2.7, 5.0, 0.5,
-               color(0.9, 1.0, 0.9), flicker=True, fl_min=0.4, fl_max=0.6, fl_speed=3.0)
+               color(1.0, 1.0, 1.0), flicker=True, fl_min=0.4, fl_max=0.6, fl_speed=3.0, is_emerg=True)
+
+# Fire alarm manual call point (red call point on corridor wall)
+node("ManualAlarmCallPoint", "StaticBody3D", SC, [
+    f'transform = {tf(-2.0, 1.3, 6.45)}', # on South wall facing North
+    'collision_layer = 2',
+    f'script = ExtResource("2_interactable")',
+    'is_alarm_pull = true',
+    'prompt_message = "Manual Call Point — [E] Pull Alarm"',
+])
+shp_callpoint = add_sub("Shp_ManualCallPoint", "BoxShape3D", ['size = Vector3(0.2, 0.2, 0.15)'])
+node("CollisionShape3D", "CollisionShape3D", f"{SC}/ManualAlarmCallPoint", [
+    f'shape = SubResource("{shp_callpoint}")',
+])
+mesh_callpoint = add_sub("Mesh_ManualCallPoint", "BoxMesh", ['size = Vector3(0.2, 0.2, 0.1)'])
+node("Mesh", "MeshInstance3D", f"{SC}/ManualAlarmCallPoint", [
+    f'mesh = SubResource("{mesh_callpoint}")',
+    f'material_override = SubResource("{M_PHONE_BOX}")', # red material
+])
+mesh_glass = add_sub("Mesh_Glass", "BoxMesh", ['size = Vector3(0.1, 0.1, 0.01)'])
+node("Glass", "MeshInstance3D", f"{SC}/ManualAlarmCallPoint", [
+    f'transform = {tf(0, 0, 0.051)}',
+    f'mesh = SubResource("{mesh_glass}")',
+    f'material_override = SubResource("{M_TILE_WHITE}")', # white/glass material
+])
 
 # Exit signs on ceiling
 node("ExitSigns", "Node3D", SC, [])
@@ -934,7 +1018,7 @@ for i, cx in enumerate([0, 5, 10]):
 
 # Corridor extinguisher (south wall)
 node("CorridorExtinguisher", "StaticBody3D", SC, [
-    f'transform = {tf(-2.0, 0.8, 6.45)}',
+    f'transform = {tf(-2.8, 0.8, 6.45)}',
     'collision_layer = 2',
     f'script = ExtResource("2_interactable")',
     'prompt_message = "[E] Fire extinguisher — Pull pin, Aim low, Squeeze, Sweep side to side"',
@@ -950,7 +1034,7 @@ node("Mesh", "MeshInstance3D", f"{SC}/CorridorExtinguisher", [
     f'mesh = SubResource("{MESH_EXTINGUISH}")',
     f'material_override = SubResource("{M_PHONE_BOX}")',
 ])
-csg_box("CorridorExtinguisher_Sign", SC, -2.0, 1.8, 6.52, 0.4, 0.25, 0.05, M_WARN_SIGN, collision=False)
+csg_box("CorridorExtinguisher_Sign", SC, -2.8, 1.8, 6.52, 0.4, 0.25, 0.05, M_WARN_SIGN, collision=False)
 
 # Unlocked, interactable door for the new neighbor unit (Unit 8B) at X = 11.0, leading into Unit 8B room
 door_static("Unit8B_CorridorDoor", SC, 11.0, 0, 3.4,
@@ -1111,6 +1195,28 @@ node("CollisionShape3D", "CollisionShape3D", f"{EL}/ElevatorCabinArea", [
 # Warning sign
 csg_box("WarnSign", EL, 20.8, 1.8, 4.5, 0.8, 0.4, 0.05, M_WARN_SIGN, collision=False)
 
+# Suitcase NPC in elevator lobby
+node("SuitcaseNPC", "CharacterBody3D", EL, [
+    f'transform = {tf(17.5, 0.1, 5.0)}',
+    'collision_layer = 4',
+    'collision_mask = 3',
+    f'script = ExtResource("9_npc")',
+    'is_suitcase_npc = true',
+])
+
+node("InteractableChild", "StaticBody3D", "Geometry/ElevatorLobby/SuitcaseNPC", [
+    'collision_layer = 2',
+    f'script = ExtResource("2_interactable")',
+    'is_suitcase_npc = true',
+    'prompt_message = "Speak to resident"',
+])
+# Shape for interactable child
+shp_suit_interact = add_sub("Shp_SuitcaseNPC_Interact", "BoxShape3D", ['size = Vector3(0.8, 1.8, 0.8)'])
+node("CollisionShape3D", "CollisionShape3D", "Geometry/ElevatorLobby/SuitcaseNPC/InteractableChild", [
+    f'transform = {tf(0, 0.9, 0)}',
+    f'shape = SubResource("{shp_suit_interact}")',
+])
+
 # Lobby hum audio
 node("ElevatorHum", "AudioStreamPlayer3D", EL, [
     f'transform = {tf(18, 1.5, 5.0)}',
@@ -1193,7 +1299,7 @@ for floor_idx in range(9):
     
     # Emergency light
     omni_light("EmergLight", lnd, shaft_cx, y_land + 2.6, z_land, 0.8,
-               color(0.8, 1.0, 0.8), flicker=True, fl_min=0.6, fl_max=0.9, fl_speed=4.0)
+               color(1.0, 1.0, 1.0), flicker=True, fl_min=0.6, fl_max=0.9, fl_speed=4.0, is_emerg=True)
     
     # Exit sign above going back to corridor (only L8)
     if floor_idx == 0:
@@ -1374,31 +1480,12 @@ streetlight_static("Streetlight_E", OUT, 14.0, -22.6, 20.0)
 
 # Assembly point
 csg_box("AssemblyZone", OUT, -8, -22.55, 22, 8, 0.05, 6, M_ASSEMBLY)
-csg_box("SignPost", OUT, -8, -21.5, 20, 0.1, 2, 0.1, M_SIGN_POST)
-csg_box("SignBoard", OUT, -8, -20.5, 20, 1.5, 0.8, 0.05, M_EXIT_SIGN)
 omni_light("AssemblyLight", OUT, -8, -20, 22, 2.0, color(0.5, 1.0, 0.5), omni_range=10.0)
 
-# Guard post
-node("GuardPost", "StaticBody3D", OUT, [
-    f'transform = {tf(-4, -22.2, 21)}',
-    'collision_layer = 2',
-    f'script = ExtResource("2_interactable")',
-    'prompt_message = "[E] Report to guard — tell them your unit and that you have evacuated."',
-    'can_feel = false',
-])
-node("CollisionShape3D", "CollisionShape3D", f"{OUT}/GuardPost", [
-    f'transform = {tf(0, 0.8, 0)}',
-    f'shape = SubResource("{SHP_GUARD}")',
-])
-node("Mesh", "CSGBox3D", f"{OUT}/GuardPost", [
-    f'transform = {tf(0, 0.8, 0)}',
-    f'size = Vector3(0.5, 1.6, 0.5)',
-    f'material = SubResource("{M_GUARD}")',
-])
 
 # Emergency phone
 node("EmergencyPhone", "StaticBody3D", OUT, [
-    f'transform = {tf(-2, -21.8, 20)}',
+    f'transform = {tf(-7.0, -21.8, 20.5)}',
     'collision_layer = 2',
     f'script = ExtResource("2_interactable")',
     'prompt_message = "[E] Emergency phone — Call BOMBA (999)"',
@@ -1414,7 +1501,7 @@ node("Mesh", "CSGBox3D", f"{OUT}/EmergencyPhone", [
     f'size = Vector3(0.4, 1.6, 0.4)',
     f'material = SubResource("{M_PHONE_BOX}")',
 ])
-omni_light("PhoneLight", OUT, -2, -20.5, 20, 1.5, color(1.0, 0.3, 0.3), omni_range=4.0)
+omni_light("PhoneLight", OUT, -7.0, -20.5, 20.5, 1.5, color(1.0, 0.3, 0.3), omni_range=4.0)
 
 # Night directional light for exterior
 node("NightLight", "DirectionalLight3D", OUT, [

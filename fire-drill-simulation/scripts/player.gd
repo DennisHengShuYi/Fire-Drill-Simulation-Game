@@ -36,11 +36,17 @@ var call_state: int = 0
 
 @export var teleport_target_pos: Vector3 = Vector3(0, 0, 0)
 var is_outside: bool = false
+@export var has_mobile_phone: bool = false
+var climbing_ladder: bool = false
+var has_called_bomba: bool = false
+var ladder_climb_speed: float = 4.5
+var target_climb_y: float = -22.3
+var mobile_phone_label: Label = null
 var has_shown_crouch_tip: bool = false
 var has_wet_towel: bool = false
 var _wet_towel_shown: bool = false
 
-@export var time_limit: float = 90.0
+@export var time_limit: float = 150.0
 var current_time: float
 var is_timer_active: bool = true
 var timer_label: Label = null
@@ -116,8 +122,19 @@ func _ready():
 	setup_stamina_hud()
 	setup_objectives_panel()
 	setup_pause_panel()
+	setup_mobile_phone_hud()
+
+	# Prevent LogPanel from overlapping with TimerPanel and OxygenPanel at any resolution
+	var log_panel = $HUD/LogPanel
+	if log_panel:
+		log_panel.anchor_left = 0.0
+		log_panel.anchor_right = 1.0
+		log_panel.offset_left = 220.0
+		log_panel.offset_right = -280.0
 
 	show_log_message("FIRE ALARM RINGING! Find a way out safely!")
+
+
 
 # ---------------------------------------------------------------------------
 # Input
@@ -126,6 +143,11 @@ func _ready():
 func _input(event):
 	# ESC toggles pause (works even during phone UI since it was previously
 	# only releasing mouse without any feedback).
+	if has_mobile_phone and not has_called_bomba and event is InputEventKey and event.pressed and event.keycode == KEY_P:
+		if not phone_active and not is_paused and not dilemma_active and not climbing_ladder:
+			open_phone_dialer()
+		return
+
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if not phone_active:
 			toggle_pause()
@@ -143,6 +165,23 @@ func _input(event):
 
 	if phone_active:
 		return
+
+	if not phone_active and not in_extinguisher_minigame and event is InputEventKey and event.pressed and event.keycode == KEY_X:
+		if raycast.is_colliding():
+			var collider = raycast.get_collider()
+			if collider is Interactable and collider.is_door and not collider.door_opened and collider.name.to_lower().contains("bedroom"):
+				if not collider.is_sealed:
+					if has_wet_towel:
+						collider.is_sealed = true
+						has_wet_towel = false # consume wet towel
+						if wet_towel_label:
+							wet_towel_label.visible = false
+						show_log_message("You sealed the bedroom door gap using your wet towel to block smoke.")
+						GameManager.sealed_door = true
+						collider.play_sound_3d("sizzle")
+					else:
+						show_log_message("You need a wet towel to seal the door gap!")
+				return
 
 	if in_extinguisher_minigame:
 		if event is InputEventKey and event.pressed:
@@ -192,19 +231,28 @@ func toggle_pause():
 func _physics_process(delta):
 	if not is_inside_tree():
 		return
+	if climbing_ladder:
+		global_position.y -= ladder_climb_speed * delta
+		camera.rotation.x = deg_to_rad(-25.0)
+		if global_position.y <= target_climb_y:
+			global_position.y = target_climb_y
+			climbing_ladder = false
+			collision_shape.disabled = false
+			GameManager.trigger_victory()
+		return
 	if dilemma_active:
 		velocity = Vector3.ZERO
 		move_and_slide()
-		if dilemma_door:
+		if not is_instance_valid(dilemma_panel) and dilemma_door:
 			prompt_label.text = "HELP NEIGHBOR? [1] Wait & Rescue (costs 15s) | [2] Advise to use Balcony Exit"
-		if Input.is_action_just_pressed("dilemma_1"):
-			dilemma_active = false
-			if dilemma_door and dilemma_door.has_method("resolve_dilemma"):
-				dilemma_door.resolve_dilemma(self, 1)
-		elif Input.is_action_just_pressed("dilemma_2"):
-			dilemma_active = false
-			if dilemma_door and dilemma_door.has_method("resolve_dilemma"):
-				dilemma_door.resolve_dilemma(self, 2)
+			if Input.is_action_just_pressed("dilemma_1"):
+				dilemma_active = false
+				if dilemma_door.has_method("resolve_dilemma"):
+					dilemma_door.resolve_dilemma(self, 1)
+			elif Input.is_action_just_pressed("dilemma_2"):
+				dilemma_active = false
+				if dilemma_door.has_method("resolve_dilemma"):
+					dilemma_door.resolve_dilemma(self, 2)
 		return
 
 	if phone_active or in_elevator_sequence or in_extinguisher_minigame:
@@ -233,10 +281,16 @@ func _physics_process(delta):
 		if current_time <= 0.0:
 			current_time = 0.0
 			is_timer_active = false
-			GameManager.trigger_game_over(
-				"You ran out of time! The fire spread and trapped you in the building.",
-				"BOMBA TIP: Fire spreads incredibly fast — often in less than 2-3 minutes. Never delay your evacuation to collect belongings. Every second counts!"
-			)
+			if is_outside:
+				GameManager.trigger_game_over(
+					"You ran out of time! You failed to call BOMBA (999) to report the fire from the safe assembly area.",
+					"BOMBA TIP: Once you have evacuated to a safe area outside, always call BOMBA at 999 immediately. Delaying the report can lead to the fire spreading to neighboring units and delay rescue operations!"
+				)
+			else:
+				GameManager.trigger_game_over(
+					"You ran out of time! The fire spread and trapped you in the building.",
+					"BOMBA TIP: Fire spreads incredibly fast — often in less than 2-3 minutes. Never delay your evacuation to collect belongings. Every second counts!"
+				)
 
 		if timer_label:
 			var minutes = int(current_time) / 60
@@ -337,6 +391,9 @@ func _physics_process(delta):
 		obj_refresh_timer = 2.0
 		_update_objectives()
 
+	if mobile_phone_label:
+		mobile_phone_label.visible = has_mobile_phone and not phone_active and not climbing_ladder and not has_called_bomba
+
 	# Log fade
 	if log_timer > 0.0:
 		log_timer -= delta
@@ -397,11 +454,21 @@ func process_smoke_inhalation(delta):
 			return
 
 	elif in_smoke_zone:
+		var bedroom_mult = get_bedroom_smoke_multiplier()
+		if bedroom_mult == 0.0:
+			current_oxygen = move_toward(current_oxygen, max_oxygen, 5.0 * delta)
+			current_oxygen = clamp(current_oxygen, 0.0, max_oxygen)
+			oxygen_bar.value = current_oxygen
+			if smoke_overlay:
+				smoke_overlay.color.a = lerp(smoke_overlay.color.a, 0.0, 3.0 * delta)
+			return
+
 		if not has_shown_crouch_tip:
 			has_shown_crouch_tip = true
 			show_log_message("Stay low! Crouch (C or Ctrl) to reduce smoke inhalation.")
 
 		var multiplier = 0.5 if has_wet_towel else 1.0
+		multiplier *= bedroom_mult
 
 		if not is_crouching:
 			current_oxygen -= 15.0 * delta * multiplier
@@ -564,17 +631,62 @@ func press_number(num: String):
 		if num == "1":
 			call_state = 3
 			phone_display.text = "REPORTING"
-			phone_instructions.text = "You: 'There is a massive fire at Unit 8A of the Condominium! The kitchen is on fire and smoke is filling the hallway!'"
-			GameManager.escape_time = time_limit - current_time
-			await get_tree().create_timer(3.0).timeout
-			if not phone_active: return
-			phone_instructions.text = "BOMBA: 'Understood! Fire engine is dispatched to Unit 8A. Evacuate to a safe area immediately!'\n[Please wait for dispatcher to end call...]"
-			await get_tree().create_timer(3.0).timeout
-			if not phone_active: return
-			phone_active = false
-			phone_panel.visible = false
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			GameManager.trigger_victory()
+			
+			var in_bedroom = (global_position.x < -2.0 and global_position.z < -5.0) or (global_position.x > 1.0 and global_position.x < 5.5 and global_position.z < -5.0)
+			var on_balcony = (global_position.x > 1.4 and global_position.x < 4.6 and global_position.z > 0.9 and global_position.z < 3.6)
+			
+			if not is_outside and has_mobile_phone:
+				if on_balcony:
+					phone_instructions.text = "You: 'Trapped on balcony at Unit 8A! Hallway is on fire, need rescue!'"
+					await get_tree().create_timer(3.0).timeout
+					if not phone_active: return
+					phone_instructions.text = "BOMBA: 'Understood! A ladder truck is extending a safety ladder to your balcony. Climb down now!'\n[Please wait for dispatcher to end call...]"
+					await get_tree().create_timer(3.0).timeout
+					if not phone_active: return
+					phone_active = false
+					phone_panel.visible = false
+					Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+					has_called_bomba = true
+					var ladder = get_tree().root.find_child("SafetyLadder", true, false)
+					if ladder:
+						ladder.visible = true
+						ladder.collision_layer = 2
+					show_log_message("BOMBA HAS ARRIVED! Look over the center of the balcony railing to find the yellow safety ladder!")
+				elif in_bedroom and GameManager.sealed_door:
+					phone_instructions.text = "You: 'Trapped in Unit 8A bedroom! Hallway is on fire, but I sealed the door gaps!'"
+					await get_tree().create_timer(3.0).timeout
+					if not phone_active: return
+					phone_instructions.text = "BOMBA: 'Excellent action sealing the door! Stay low, a rescue team is breaching to extract you now!'\n[Please wait for dispatcher to end call...]"
+					await get_tree().create_timer(3.0).timeout
+					if not phone_active: return
+					phone_active = false
+					phone_panel.visible = false
+					Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+					show_log_message("RESCUE TEAM BREACHING! Waiting for evacuation...")
+					await get_tree().create_timer(2.0).timeout
+					GameManager.trigger_victory()
+				else:
+					phone_instructions.text = "You: 'Trapped in Unit 8A! Hallway is on fire!'"
+					await get_tree().create_timer(3.0).timeout
+					if not phone_active: return
+					phone_instructions.text = "BOMBA: 'Evacuate immediately! If hallway is blocked, find a room, seal the door with wet towels, and call us back!'\n[Call ended]"
+					await get_tree().create_timer(4.0).timeout
+					if not phone_active: return
+					phone_active = false
+					phone_panel.visible = false
+					Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			else:
+				phone_instructions.text = "You: 'There is a massive fire at Unit 8A of the Condominium! The kitchen is on fire and smoke is filling the hallway!'"
+				GameManager.escape_time = time_limit - current_time
+				await get_tree().create_timer(3.0).timeout
+				if not phone_active: return
+				phone_instructions.text = "BOMBA: 'Understood! Fire engine is dispatched to Unit 8A. Evacuate to a safe area immediately!'\n[Please wait for dispatcher to end call...]"
+				await get_tree().create_timer(3.0).timeout
+				if not phone_active: return
+				phone_active = false
+				phone_panel.visible = false
+				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+				GameManager.trigger_victory()
 		elif num == "2":
 			phone_display.text = "ERR"
 			phone_instructions.text = "BOMBA: 'This line is for life-threatening fires only! State your fire emergency now! [Press 1 to Report Condominium Fire]'"
@@ -719,6 +831,30 @@ func update_stamina_hud():
 	if stamina_bar:
 		stamina_bar.value = current_stamina
 
+func setup_mobile_phone_hud():
+	mobile_phone_label = Label.new()
+	mobile_phone_label.name = "MobilePhoneLabel"
+	mobile_phone_label.text = "[P] Call emergency on Mobile Phone"
+	mobile_phone_label.add_theme_color_override("font_color", Color(0.9, 0.8, 0.2))
+	mobile_phone_label.add_theme_font_size_override("font_size", 12)
+	mobile_phone_label.visible = false
+	mobile_phone_label.anchor_left   = 1.0
+	mobile_phone_label.anchor_right  = 1.0
+	mobile_phone_label.anchor_top    = 0.0
+	mobile_phone_label.anchor_bottom = 0.0
+	mobile_phone_label.offset_left   = -260.0
+	mobile_phone_label.offset_top    = 164.0
+	mobile_phone_label.offset_right  = 0.0
+	mobile_phone_label.offset_bottom = 184.0
+	$HUD.add_child(mobile_phone_label)
+
+func start_climbing_ladder():
+	climbing_ladder = true
+	show_log_message("Climbing down the safety ladder... Keep holding on!")
+	collision_shape.disabled = true
+	global_position.x = 3.0
+	global_position.z = 3.7
+
 func setup_objectives_panel():
 	objectives_panel = Panel.new()
 	objectives_panel.name = "ObjectivesPanel"
@@ -735,7 +871,7 @@ func setup_objectives_panel():
 	objectives_panel.anchor_right = 0.0
 	objectives_panel.anchor_bottom = 1.0
 	objectives_panel.offset_left = 10
-	objectives_panel.offset_top = -200
+	objectives_panel.offset_top = -240
 	objectives_panel.offset_right = 290
 	objectives_panel.offset_bottom = -10
 	$HUD.add_child(objectives_panel)
@@ -752,7 +888,7 @@ func setup_objectives_panel():
 	objectives_label.add_theme_font_size_override("font_size", 12)
 	objectives_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
 	objectives_label.position = Vector2(8, 24)
-	objectives_label.size = Vector2(270, 168)
+	objectives_label.size = Vector2(270, 208)
 	objectives_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	objectives_panel.add_child(objectives_label)
 
@@ -768,6 +904,9 @@ func _update_objectives():
 		"%s Stay low in smoke (crouch)" % (c if GameManager.crouched_in_smoke else e),
 		"%s Check kitchen door (hot!)" % (c if GameManager.felt_kitchen_door else e),
 		"%s Get wet towel — optional" % (c if GameManager.got_wet_towel else e),
+		"%s Pull fire alarm call point" % (c if GameManager.alarm_triggered else e),
+		"%s Seal bedroom door — optional" % (c if GameManager.sealed_door else e),
+		"%s Correct panicking resident" % (c if GameManager.corrected_npc else e),
 		"%s Use stairs, not the lift" % (c if GameManager.used_stairs else e),
 		"%s Call BOMBA 999 outside" % (c if GameManager.called_999 else e),
 	]
@@ -816,9 +955,9 @@ func setup_pause_panel():
 
 	_pause_obj_label = Label.new()
 	_pause_obj_label.name = "PauseObjLabel"
-	_pause_obj_label.add_theme_font_size_override("font_size", 13)
+	_pause_obj_label.add_theme_font_size_override("font_size", 11)
 	_pause_obj_label.position = Vector2(20, 214)
-	_pause_obj_label.size = Vector2(400, 130)
+	_pause_obj_label.size = Vector2(400, 155)
 	pause_panel.add_child(_pause_obj_label)
 
 	var quit_btn = Button.new()
@@ -842,6 +981,9 @@ func _update_pause_objectives():
 		"%s Stay low in smoke (crouch)" % (c if GameManager.crouched_in_smoke else e),
 		"%s Check kitchen door (hot!)" % (c if GameManager.felt_kitchen_door else e),
 		"%s Get wet towel — optional" % (c if GameManager.got_wet_towel else e),
+		"%s Pull fire alarm call point" % (c if GameManager.alarm_triggered else e),
+		"%s Seal bedroom door — optional" % (c if GameManager.sealed_door else e),
+		"%s Correct panicking resident" % (c if GameManager.corrected_npc else e),
 		"%s Use stairs, not the lift" % (c if GameManager.used_stairs else e),
 		"%s Call BOMBA 999 outside" % (c if GameManager.called_999 else e),
 	]
@@ -1138,6 +1280,111 @@ func spawn_face_mist():
 		if is_instance_valid(mist):
 			mist.queue_free()
 	)
+
+func get_bedroom_smoke_multiplier() -> float:
+	var pos = global_position
+	# Master Bedroom / Ensuite
+	if pos.x < -2.0 and pos.z < -5.0:
+		var mb = get_node_or_null("/root/Level/Geometry/Unit8A/BedroomDoor")
+		if mb and mb.is_door:
+			if not mb.door_opened:
+				return 0.0 if mb.is_sealed else 0.3
+	# Bedroom 2
+	elif pos.x > 1.0 and pos.x < 5.5 and pos.z < -5.0:
+		var b2 = get_node_or_null("/root/Level/Geometry/Unit8A/Bedroom2Door")
+		if b2 and b2.is_door:
+			if not b2.door_opened:
+				return 0.0 if b2.is_sealed else 0.3
+	return 1.0
+
+var dilemma_panel: Panel = null
+
+func show_dilemma_menu(question: String, opt1_text: String, opt2_text: String, callback_obj: Object, callback_func: String):
+	dilemma_active = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	
+	if dilemma_panel:
+		dilemma_panel.queue_free()
+		
+	dilemma_panel = Panel.new()
+	dilemma_panel.name = "DilemmaMenuPanel"
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.12, 0.1, 0.95)
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
+	style.border_color = Color(0.15, 0.6, 0.35, 0.9)
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_right = 12
+	style.corner_radius_bottom_left = 12
+	dilemma_panel.add_theme_stylebox_override("panel", style)
+	
+	dilemma_panel.size = Vector2(480, 240)
+	dilemma_panel.anchor_left = 0.5
+	dilemma_panel.anchor_top = 0.5
+	dilemma_panel.anchor_right = 0.5
+	dilemma_panel.anchor_bottom = 0.5
+	dilemma_panel.offset_left = -240
+	dilemma_panel.offset_top = -120
+	dilemma_panel.offset_right = 240
+	dilemma_panel.offset_bottom = 120
+	
+	$HUD.add_child(dilemma_panel)
+	
+	var q_lbl = Label.new()
+	q_lbl.text = question
+	q_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	q_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	q_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	q_lbl.add_theme_font_size_override("font_size", 14)
+	q_lbl.size = Vector2(440, 80)
+	q_lbl.position = Vector2(20, 20)
+	dilemma_panel.add_child(q_lbl)
+	
+	var btn1 = Button.new()
+	btn1.text = opt1_text
+	btn1.size = Vector2(440, 45)
+	btn1.position = Vector2(20, 110)
+	var btn_style = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.1, 0.35, 0.2, 0.8)
+	btn_style.border_width_left = 1
+	btn_style.border_width_top = 1
+	btn_style.border_width_right = 1
+	btn_style.border_width_bottom = 1
+	btn_style.border_color = Color(0.2, 0.6, 0.35, 0.8)
+	btn_style.corner_radius_top_left = 6
+	btn_style.corner_radius_top_right = 6
+	btn_style.corner_radius_bottom_right = 6
+	btn_style.corner_radius_bottom_left = 6
+	btn1.add_theme_stylebox_override("normal", btn_style)
+	btn1.pressed.connect(func():
+		dilemma_active = false
+		dilemma_panel.queue_free()
+		dilemma_panel = null
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		if callback_obj and callback_obj.has_method(callback_func):
+			callback_obj.call(callback_func, self, 1)
+	)
+	dilemma_panel.add_child(btn1)
+	
+	var btn2 = Button.new()
+	btn2.text = opt2_text
+	btn2.size = Vector2(440, 45)
+	btn2.position = Vector2(20, 165)
+	btn2.add_theme_stylebox_override("normal", btn_style)
+	btn2.pressed.connect(func():
+		dilemma_active = false
+		dilemma_panel.queue_free()
+		dilemma_panel = null
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		if callback_obj and callback_obj.has_method(callback_func):
+			callback_obj.call(callback_func, self, 2)
+	)
+	dilemma_panel.add_child(btn2)
+
+
 
 
 

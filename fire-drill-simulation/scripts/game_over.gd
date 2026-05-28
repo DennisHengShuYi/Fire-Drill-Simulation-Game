@@ -26,18 +26,29 @@ func _ready():
 		mistakes.append("• You opened the hot kitchen door without checking")
 
 	if mistakes.size() > 0:
+		# Enlarge panel height and shift it up to remain centered
+		$Panel.offset_top = -290
+		$Panel.offset_bottom = 290
+		
+		# Shift the TipPanel up slightly
 		var tip_panel = $Panel/TipPanel
+		if tip_panel:
+			tip_panel.offset_top = -90
+			tip_panel.offset_bottom = 90
+		
+		# Instantiate and position mistakes label cleanly below the TipPanel
 		var mistakes_label = Label.new()
 		mistakes_label.text = "This run:\n" + "\n".join(mistakes)
 		mistakes_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.2))
 		mistakes_label.add_theme_font_size_override("font_size", 13)
 		mistakes_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-		if tip_panel:
-			mistakes_label.position = Vector2(
-				tip_panel.position.x,
-				tip_panel.position.y + tip_panel.size.y + 16
-			)
-			mistakes_label.size = Vector2(tip_panel.size.x, 120)
+		
+		# Exact absolute coordinates within the enlarged Panel
+		# Panel center is 290, TipPanel bottom is 290 + 90 = 380.
+		# mistakes_label sits at Y = 390 with height 90.
+		# TryAgain/MainMenu buttons start at Y = 580 - 90 = 490 (zero overlap).
+		mistakes_label.position = Vector2(40, 390)
+		mistakes_label.size = Vector2(520, 90)
 		$Panel.add_child(mistakes_label)
 
 	$Panel/TryAgainBtn.pressed.connect(_on_try_again_pressed)

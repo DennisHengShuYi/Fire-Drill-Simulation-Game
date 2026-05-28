@@ -2,7 +2,7 @@ extends Area3D
 
 var tracked_player = null
 var time_since_spread: float = 0.0
-const SPREAD_INTERVAL: float = 15.0 # Grow/spread every 15 seconds
+const SPREAD_INTERVAL: float = 25.0 # Grow/spread every 25 seconds
 var growth_stage: int = 0
 const MAX_GROWTH_STAGES: int = 4
 var is_spread_copy: bool = false

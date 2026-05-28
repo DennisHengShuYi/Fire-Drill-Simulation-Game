@@ -12,6 +12,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_inside_tree():
 		return
+	if not GameManager.alarm_triggered:
+		return
 	
 	spawn_timer += delta
 	if spawn_timer >= SPAWN_INTERVAL:
