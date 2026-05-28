@@ -59,3 +59,15 @@ rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+rendering/lights_and_shadows/positional_shadow/atlas_size=2048
+rendering/lights_and_shadows/positional_shadow/atlas_size.mobile=512
+rendering/lights_and_shadows/directional_shadow/size=2048
+rendering/lights_and_shadows/directional_shadow/size.mobile=1024
+rendering/limits/opengl/max_renderable_lights=32
+rendering/limits/opengl/max_renderable_lights.mobile=8
+rendering/limits/opengl/max_lights_per_object.mobile=4
+rendering/anti_aliasing/quality/msaa_3d=0
+rendering/anti_aliasing/quality/msaa_3d.mobile=0
+rendering/viewport/transparent_background=false
+rendering/environment/glow/upscale_mode.mobile=0
+
