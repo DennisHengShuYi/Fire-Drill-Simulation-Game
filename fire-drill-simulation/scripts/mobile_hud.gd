@@ -2,6 +2,17 @@ extends CanvasLayer
 
 var player: CharacterBody3D = null
 
+# StyleBox pre-instantiations to prevent UI redraw lag
+var style_crouch_normal: StyleBoxFlat = null
+var style_crouch_active: StyleBoxFlat = null
+var style_interact_normal: StyleBoxFlat = null
+var style_interact_disabled: StyleBoxFlat = null
+var style_interact_extinguisher: StyleBoxFlat = null
+
+# State tracking to only update StyleBox overrides on transition
+var _last_crouch_state: bool = false
+var _last_interact_state: String = ""
+
 # UI Nodes created programmatically
 var joystick_base: Panel = null
 var joystick_knob: Panel = null
@@ -34,6 +45,7 @@ func _ready():
 	# Keep processing even when paused so pause button and UI still work
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
+	initialize_styleboxes()
 	setup_joystick()
 	setup_look_area()
 	setup_crouch_button()
@@ -44,6 +56,72 @@ func _ready():
 	
 	# Connect to resize signals if any, or just rely on anchors
 	get_viewport().size_changed.connect(on_viewport_resize)
+
+func initialize_styleboxes():
+	# Crouch normal style
+	style_crouch_normal = StyleBoxFlat.new()
+	style_crouch_normal.bg_color = Color(0.2, 0.2, 0.2, 0.5)
+	style_crouch_normal.border_width_left = 2
+	style_crouch_normal.border_width_top = 2
+	style_crouch_normal.border_width_right = 2
+	style_crouch_normal.border_width_bottom = 2
+	style_crouch_normal.border_color = Color(1.0, 1.0, 1.0, 0.4)
+	style_crouch_normal.corner_radius_top_left = 35
+	style_crouch_normal.corner_radius_top_right = 35
+	style_crouch_normal.corner_radius_bottom_right = 35
+	style_crouch_normal.corner_radius_bottom_left = 35
+	
+	# Crouch active style
+	style_crouch_active = StyleBoxFlat.new()
+	style_crouch_active.bg_color = Color(0.9, 0.45, 0.1, 0.8)
+	style_crouch_active.border_width_left = 2
+	style_crouch_active.border_width_top = 2
+	style_crouch_active.border_width_right = 2
+	style_crouch_active.border_width_bottom = 2
+	style_crouch_active.border_color = Color(1.0, 0.65, 0.2, 0.95)
+	style_crouch_active.corner_radius_top_left = 35
+	style_crouch_active.corner_radius_top_right = 35
+	style_crouch_active.corner_radius_bottom_right = 35
+	style_crouch_active.corner_radius_bottom_left = 35
+	
+	# Interact normal style
+	style_interact_normal = StyleBoxFlat.new()
+	style_interact_normal.bg_color = Color(0.12, 0.5, 0.3, 0.7)
+	style_interact_normal.border_width_left = 3
+	style_interact_normal.border_width_top = 3
+	style_interact_normal.border_width_right = 3
+	style_interact_normal.border_width_bottom = 3
+	style_interact_normal.border_color = Color(0.2, 0.8, 0.5, 0.9)
+	style_interact_normal.corner_radius_top_left = 45
+	style_interact_normal.corner_radius_top_right = 45
+	style_interact_normal.corner_radius_bottom_right = 45
+	style_interact_normal.corner_radius_bottom_left = 45
+	
+	# Interact disabled style
+	style_interact_disabled = StyleBoxFlat.new()
+	style_interact_disabled.bg_color = Color(0.1, 0.1, 0.1, 0.4)
+	style_interact_disabled.border_width_left = 3
+	style_interact_disabled.border_width_top = 3
+	style_interact_disabled.border_width_right = 3
+	style_interact_disabled.border_width_bottom = 3
+	style_interact_disabled.border_color = Color(0.3, 0.3, 0.3, 0.4)
+	style_interact_disabled.corner_radius_top_left = 45
+	style_interact_disabled.corner_radius_top_right = 45
+	style_interact_disabled.corner_radius_bottom_right = 45
+	style_interact_disabled.corner_radius_bottom_left = 45
+	
+	# Interact extinguisher style
+	style_interact_extinguisher = StyleBoxFlat.new()
+	style_interact_extinguisher.bg_color = Color(0.8, 0.15, 0.15, 0.75)
+	style_interact_extinguisher.border_width_left = 3
+	style_interact_extinguisher.border_width_top = 3
+	style_interact_extinguisher.border_width_right = 3
+	style_interact_extinguisher.border_width_bottom = 3
+	style_interact_extinguisher.border_color = Color(0.95, 0.3, 0.3, 0.95)
+	style_interact_extinguisher.corner_radius_top_left = 45
+	style_interact_extinguisher.corner_radius_top_right = 45
+	style_interact_extinguisher.corner_radius_bottom_right = 45
+	style_interact_extinguisher.corner_radius_bottom_left = 45
 
 func setup_joystick():
 	# Joystick Base
@@ -120,21 +198,9 @@ func setup_crouch_button():
 	crouch_btn.text = "▼"
 	crouch_btn.add_theme_font_size_override("font_size", 24)
 	
-	var crouch_style = StyleBoxFlat.new()
-	crouch_style.bg_color = Color(0.2, 0.2, 0.2, 0.5)
-	crouch_style.border_width_left = 2
-	crouch_style.border_width_top = 2
-	crouch_style.border_width_right = 2
-	crouch_style.border_width_bottom = 2
-	crouch_style.border_color = Color(1.0, 1.0, 1.0, 0.4)
-	crouch_style.corner_radius_top_left = 35
-	crouch_style.corner_radius_top_right = 35
-	crouch_style.corner_radius_bottom_right = 35
-	crouch_style.corner_radius_bottom_left = 35
-	
-	crouch_btn.add_theme_stylebox_override("normal", crouch_style)
-	crouch_btn.add_theme_stylebox_override("hover", crouch_style)
-	crouch_btn.add_theme_stylebox_override("pressed", crouch_style)
+	crouch_btn.add_theme_stylebox_override("normal", style_crouch_normal)
+	crouch_btn.add_theme_stylebox_override("hover", style_crouch_normal)
+	crouch_btn.add_theme_stylebox_override("pressed", style_crouch_normal)
 	crouch_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	
 	# Bottom Center
@@ -149,6 +215,7 @@ func setup_crouch_button():
 	
 	crouch_btn.pressed.connect(_on_crouch_pressed)
 	add_child(crouch_btn)
+	_last_crouch_state = false
 
 func setup_interact_button():
 	interact_btn = Button.new()
@@ -158,21 +225,10 @@ func setup_interact_button():
 	interact_btn.add_theme_font_size_override("font_size", 12)
 	interact_btn.autowrap_mode = TextServer.AUTOWRAP_WORD
 	
-	var interact_style = StyleBoxFlat.new()
-	interact_style.bg_color = Color(0.12, 0.5, 0.3, 0.7)
-	interact_style.border_width_left = 3
-	interact_style.border_width_top = 3
-	interact_style.border_width_right = 3
-	interact_style.border_width_bottom = 3
-	interact_style.border_color = Color(0.2, 0.8, 0.5, 0.9)
-	interact_style.corner_radius_top_left = 45
-	interact_style.corner_radius_top_right = 45
-	interact_style.corner_radius_bottom_right = 45
-	interact_style.corner_radius_bottom_left = 45
-	
-	interact_btn.add_theme_stylebox_override("normal", interact_style)
-	interact_btn.add_theme_stylebox_override("hover", interact_style)
-	interact_btn.add_theme_stylebox_override("pressed", interact_style)
+	interact_btn.add_theme_stylebox_override("normal", style_interact_normal)
+	interact_btn.add_theme_stylebox_override("hover", style_interact_normal)
+	interact_btn.add_theme_stylebox_override("pressed", style_interact_normal)
+	interact_btn.add_theme_stylebox_override("disabled", style_interact_normal)
 	interact_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	
 	# Bottom Right
@@ -187,6 +243,7 @@ func setup_interact_button():
 	
 	interact_btn.pressed.connect(_on_interact_pressed)
 	add_child(interact_btn)
+	_last_interact_state = "normal"
 
 func setup_pause_button():
 	pause_btn = Button.new()
@@ -341,45 +398,69 @@ func on_viewport_resize():
 	# Make sure anchors remain intact and update limits if needed
 	pass
 
-func _process(_delta):
+var _hud_tick: float = 0.0
+
+func _process(delta):
 	if not is_instance_valid(player):
 		return
-		
-	# 1. Update Crouch Button visual state
-	var crouch_style = crouch_btn.get_theme_stylebox("normal") as StyleBoxFlat
-	if crouch_style:
-		if player.is_crouching:
-			crouch_style.bg_color = Color(0.9, 0.45, 0.1, 0.8)
-			crouch_style.border_color = Color(1.0, 0.65, 0.2, 0.95)
-		else:
-			crouch_style.bg_color = Color(0.2, 0.2, 0.2, 0.5)
-			crouch_style.border_color = Color(1.0, 1.0, 1.0, 0.4)
+	# Throttle HUD updates to 20Hz — sufficient for UI feedback, saves ~66% of _process overhead
+	_hud_tick += delta
+	if _hud_tick < 0.05:
+		return
+	_hud_tick = 0.0
+	
+	# 1. Update Crouch Button visual state on transition
+	var current_crouch = player.is_crouching
+	if current_crouch != _last_crouch_state:
+		_last_crouch_state = current_crouch
+		var style = style_crouch_active if current_crouch else style_crouch_normal
+		crouch_btn.add_theme_stylebox_override("normal", style)
+		crouch_btn.add_theme_stylebox_override("hover", style)
+		crouch_btn.add_theme_stylebox_override("pressed", style)
 			
-	# 2. Update Interact Button label
+	# 2. Update Interact Button label & state
 	var raw_prompt = player.prompt_label.text
 	var cleaned = clean_prompt(raw_prompt)
-	interact_btn.text = cleaned
 	
-	# Interact Button is disabled/greyed out if no interactable is hovered (unless holding extinguisher)
-	var interact_style = interact_btn.get_theme_stylebox("normal") as StyleBoxFlat
+	var target_text: String = ""
+	var target_disabled: bool = false
+	var target_style_state: String = ""
+	
 	if cleaned == "[E]":
 		if player.has_extinguisher:
-			interact_btn.text = "🧯 USE EXTINGUISHER"
-			interact_btn.disabled = false
-			if interact_style:
-				interact_style.bg_color = Color(0.8, 0.15, 0.15, 0.75)
-				interact_style.border_color = Color(0.95, 0.3, 0.3, 0.95)
+			target_text = "🧯 USE EXTINGUISHER"
+			target_disabled = false
+			target_style_state = "extinguisher"
 		else:
-			interact_btn.text = "INTERACT"
-			interact_btn.disabled = true
-			if interact_style:
-				interact_style.bg_color = Color(0.1, 0.1, 0.1, 0.4)
-				interact_style.border_color = Color(0.3, 0.3, 0.3, 0.4)
+			target_text = "INTERACT"
+			target_disabled = true
+			target_style_state = "disabled"
 	else:
-		interact_btn.disabled = false
-		if interact_style:
-			interact_style.bg_color = Color(0.12, 0.5, 0.3, 0.7)
-			interact_style.border_color = Color(0.2, 0.8, 0.5, 0.9)
+		target_text = cleaned
+		target_disabled = false
+		target_style_state = "normal"
+		
+	if interact_btn.text != target_text:
+		interact_btn.text = target_text
+		
+	if interact_btn.disabled != target_disabled:
+		interact_btn.disabled = target_disabled
+		
+	if _last_interact_state != target_style_state:
+		_last_interact_state = target_style_state
+		var style: StyleBoxFlat = null
+		match target_style_state:
+			"extinguisher":
+				style = style_interact_extinguisher
+			"disabled":
+				style = style_interact_disabled
+			"normal":
+				style = style_interact_normal
+		if style:
+			interact_btn.add_theme_stylebox_override("normal", style)
+			interact_btn.add_theme_stylebox_override("hover", style)
+			interact_btn.add_theme_stylebox_override("pressed", style)
+			interact_btn.add_theme_stylebox_override("disabled", style)
 			
 	# 3. Update Secondary Contextual Buttons Visibility
 	update_secondary_button_states()
@@ -573,11 +654,10 @@ func reset_joystick():
 	_parse_action("sprint", false, 0.0)
 
 func _parse_action(action_name: String, pressed: bool, strength: float):
-	var ev = InputEventAction.new()
-	ev.action = action_name
-	ev.pressed = pressed
-	ev.strength = strength
-	Input.parse_input_event(ev)
+	if pressed:
+		Input.action_press(action_name, strength)
+	else:
+		Input.action_release(action_name)
 
 func send_action(action_name: String):
 	_parse_action(action_name, true, 1.0)

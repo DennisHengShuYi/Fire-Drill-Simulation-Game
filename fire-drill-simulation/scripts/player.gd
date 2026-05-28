@@ -511,17 +511,18 @@ func process_smoke_inhalation(delta):
 			wet_towel_label.visible = true
 
 	var hud_label = $HUD/OxygenPanel/Label
-	if has_wet_towel:
+	# Only update label text when state changes (not every frame)
+	if has_wet_towel and hud_label.text != "Oxygen (Wet Towel Active)":
 		hud_label.text = "Oxygen (Wet Towel Active)"
 		hud_label.add_theme_color_override("font_color", Color(0.2, 0.9, 0.5))
-	else:
+	elif not has_wet_towel and hud_label.text != "Oxygen / Air Supply":
 		hud_label.text = "Oxygen / Air Supply"
 		hud_label.remove_theme_color_override("font_color")
 
 	if current_oxygen < 25.0:
 		var pulse = (sin(Time.get_ticks_msec() * 0.01) + 1.0) * 0.5
 		oxygen_bar.modulate = Color(1.0, 0.2 + pulse * 0.4, 0.2 + pulse * 0.4)
-	else:
+	elif oxygen_bar.modulate != Color(1.0, 1.0, 1.0):
 		oxygen_bar.modulate = Color(1.0, 1.0, 1.0)
 
 	# Experience 2: dark-red vignette pulses when oxygen is critically low or full red when burning
@@ -568,6 +569,8 @@ func process_smoke_inhalation(delta):
 # ---------------------------------------------------------------------------
 
 func _check_contextual_tips():
+	if not is_inside_tree():
+		return
 	var pos = global_position
 	# Kitchen zone — roughly positive X, negative Z, level 8 height
 	if pos.x > 2.0 and pos.z < -1.0 and pos.y > -2.0:
@@ -1109,31 +1112,20 @@ func complete_extinguisher_failure():
 
 func get_nearest_fire() -> Area3D:
 	var nearest_fire: Area3D = null
-	# Let's search all Area3D children in get_tree().current_scene
-	var res = find_nearest_fire_recursive(get_tree().current_scene, 99999.0)
-	if res[0] != null:
-		nearest_fire = res[0]
+	var best_dist = 99999.0
+	for fire in get_tree().get_nodes_in_group("fires"):
+		if is_instance_valid(fire) and fire is Area3D:
+			var dist = global_position.distance_to(fire.global_position)
+			if dist < best_dist:
+				best_dist = dist
+				nearest_fire = fire
 	return nearest_fire
 
-func find_nearest_fire_recursive(node: Node, min_dist: float) -> Array:
-	var nearest: Area3D = null
-	var best_dist = min_dist
-	if node is Area3D and node.has_method("shrink_fire"):
-		var dist = global_position.distance_to(node.global_position)
-		if dist < best_dist:
-			best_dist = dist
-			nearest = node
-	for child in node.get_children():
-		var res = find_nearest_fire_recursive(child, best_dist)
-		if res[0] != null:
-			nearest = res[0]
-			best_dist = res[1]
-	return [nearest, best_dist]
-
 func try_use_extinguisher():
-	var res = find_nearest_fire_recursive(get_tree().current_scene, 99999.0)
-	var nearest = res[0]
-	var distance = res[1]
+	var nearest = get_nearest_fire()
+	var distance = 99999.0
+	if nearest:
+		distance = global_position.distance_to(nearest.global_position)
 	
 	if nearest == null or distance > 4.5:
 		show_log_message("You are too far from the fire! Get closer (within 4.5 meters) to use the extinguisher.")
