@@ -615,13 +615,14 @@ func press_number(num: String):
 	elif call_state == 1:
 		# Service selection state: 1 for BOMBA, 2 for Polis, 3 for Ambulans
 		play_tick_beep()
-		if num == "1":
+		if num == "1" or num == "3":
 			call_state = 2
-			phone_display.text = "BOMBA"
-			phone_instructions.text = "Connecting to BOMBA... Please hold..."
+			var service_name = "BOMBA" if num == "1" else "AMBULANS"
+			phone_display.text = service_name
+			phone_instructions.text = "Connecting to " + service_name + "... Please hold..."
 			await get_tree().create_timer(1.5).timeout
 			if not phone_active: return
-			phone_instructions.text = "BOMBA: 'Bomba here. State location and emergency!'\n[Press 1 to Report Condominium Fire, 2 to Ask for Advice]"
+			phone_instructions.text = service_name + ": '" + (service_name.capitalize()) + " here. State location and emergency!'\n[Press 1 to Report Condominium Fire, 2 to Ask for Advice]"
 		else:
 			phone_display.text = "ERR"
 			phone_instructions.text = "Operator: 'Invalid selection. [Press 1 for BOMBA, 2 for Polis, 3 for Ambulans]'"
@@ -640,7 +641,7 @@ func press_number(num: String):
 					phone_instructions.text = "You: 'Trapped on balcony at Unit 8A! Hallway is on fire, need rescue!'"
 					await get_tree().create_timer(3.0).timeout
 					if not phone_active: return
-					phone_instructions.text = "BOMBA: 'Understood! A ladder truck is extending a safety ladder to your balcony. Climb down now!'\n[Please wait for dispatcher to end call...]"
+					phone_instructions.text = "DISPATCHER: 'Understood! A ladder truck is extending a safety ladder to your balcony. Climb down now!'\n[Please wait for dispatcher to end call...]"
 					await get_tree().create_timer(3.0).timeout
 					if not phone_active: return
 					phone_active = false
@@ -651,12 +652,12 @@ func press_number(num: String):
 					if ladder:
 						ladder.visible = true
 						ladder.collision_layer = 2
-					show_log_message("BOMBA HAS ARRIVED! Look over the center of the balcony railing to find the yellow safety ladder!")
+					show_log_message("RESCUE HAS ARRIVED! Look over the center of the balcony railing to find the yellow safety ladder!")
 				elif in_bedroom and GameManager.sealed_door:
 					phone_instructions.text = "You: 'Trapped in Unit 8A bedroom! Hallway is on fire, but I sealed the door gaps!'"
 					await get_tree().create_timer(3.0).timeout
 					if not phone_active: return
-					phone_instructions.text = "BOMBA: 'Excellent action sealing the door! Stay low, a rescue team is breaching to extract you now!'\n[Please wait for dispatcher to end call...]"
+					phone_instructions.text = "DISPATCHER: 'Excellent action sealing the door! Stay low, a rescue team is breaching to extract you now!'\n[Please wait for dispatcher to end call...]"
 					await get_tree().create_timer(3.0).timeout
 					if not phone_active: return
 					phone_active = false
@@ -669,7 +670,7 @@ func press_number(num: String):
 					phone_instructions.text = "You: 'Trapped in Unit 8A! Hallway is on fire!'"
 					await get_tree().create_timer(3.0).timeout
 					if not phone_active: return
-					phone_instructions.text = "BOMBA: 'Evacuate immediately! If hallway is blocked, find a room, seal the door with wet towels, and call us back!'\n[Call ended]"
+					phone_instructions.text = "DISPATCHER: 'Evacuate immediately! If hallway is blocked, find a room, seal the door with wet towels, and call us back!'\n[Call ended]"
 					await get_tree().create_timer(4.0).timeout
 					if not phone_active: return
 					phone_active = false
@@ -680,7 +681,7 @@ func press_number(num: String):
 				GameManager.escape_time = time_limit - current_time
 				await get_tree().create_timer(3.0).timeout
 				if not phone_active: return
-				phone_instructions.text = "BOMBA: 'Understood! Fire engine is dispatched to Unit 8A. Evacuate to a safe area immediately!'\n[Please wait for dispatcher to end call...]"
+				phone_instructions.text = "DISPATCHER: 'Understood! Fire engine is dispatched to Unit 8A. Evacuate to a safe area immediately!'\n[Please wait for dispatcher to end call...]"
 				await get_tree().create_timer(3.0).timeout
 				if not phone_active: return
 				phone_active = false
@@ -689,7 +690,7 @@ func press_number(num: String):
 				GameManager.trigger_victory()
 		elif num == "2":
 			phone_display.text = "ERR"
-			phone_instructions.text = "BOMBA: 'This line is for life-threatening fires only! State your fire emergency now! [Press 1 to Report Condominium Fire]'"
+			phone_instructions.text = "DISPATCHER: 'This line is for life-threatening emergencies only! State your emergency now! [Press 1 to Report Condominium Fire]'"
 
 func clear_dialer():
 	if call_state == 0:

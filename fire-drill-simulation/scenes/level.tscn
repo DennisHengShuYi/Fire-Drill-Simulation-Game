@@ -1576,6 +1576,12 @@ use_collision = true
 size = Vector3(0.2, 2.8, 2.5)
 material = SubResource("Mat_Drywall2")
 
+[node name="WallEast" type="CSGBox3D" parent="Geometry/Unit8A/Foyer"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.4, 2.25)
+use_collision = true
+size = Vector3(0.1, 2.8, 2.5)
+material = SubResource("Mat_Drywall2")
+
 [node name="FoyerSmoke" type="CPUParticles3D" parent="Geometry/Unit8A/Foyer"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 2.5, 2.25)
 amount = 60
@@ -1948,17 +1954,47 @@ material_override = SubResource("Mat_BalconySign")
 
 [node name="SharedCorridor" type="Node3D" parent="Geometry"]
 
-[node name="CorridorFloor" type="CSGBox3D" parent="Geometry/SharedCorridor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.45, -0.05, 5.0)
+[node name="CorridorFloor_W" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, -0.05, 5.0)
 use_collision = true
-size = Vector3(25.1, 0.1, 3.0)
+size = Vector3(11.6, 0.1, 3.0)
 material = SubResource("Mat_CarpetCorridor")
 
-[node name="CorridorCeiling" type="CSGBox3D" parent="Geometry/SharedCorridor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.45, 2.85, 5.0)
+[node name="CorridorFloor_E" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.75, -0.05, 5.0)
 use_collision = true
-size = Vector3(25.1, 0.1, 3.0)
+size = Vector3(10.5, 0.1, 3.0)
+material = SubResource("Mat_CarpetCorridor")
+
+[node name="CorridorFloor_M" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, -0.05, 5.6)
+use_collision = true
+size = Vector3(3.0, 0.1, 1.8)
+material = SubResource("Mat_CarpetCorridor")
+
+[node name="CorridorCeiling_W" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 2.85, 5.0)
+use_collision = true
+size = Vector3(11.6, 0.1, 3.0)
 material = SubResource("Mat_Drywall")
+
+[node name="CorridorCeiling_E" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.75, 2.85, 5.0)
+use_collision = true
+size = Vector3(10.5, 0.1, 3.0)
+material = SubResource("Mat_Drywall")
+
+[node name="CorridorCeiling_M" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 2.85, 5.6)
+use_collision = true
+size = Vector3(3.0, 0.1, 1.8)
+material = SubResource("Mat_Drywall")
+
+[node name="CorridorMiddleRail" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 0.5, 4.65)
+use_collision = true
+size = Vector3(3.0, 1.0, 0.1)
+material = SubResource("Mat_Railing")
 
 [node name="WallNorth_W" type="CSGBox3D" parent="Geometry/SharedCorridor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8, 1.4, 3.4)
@@ -1967,7 +2003,7 @@ size = Vector3(8.6, 2.8, 0.2)
 material = SubResource("Mat_Drywall")
 
 [node name="WallNorth_BalconyLintel" type="CSGBox3D" parent="Geometry/SharedCorridor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 2.4, 3.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 2.4, 4.6)
 use_collision = true
 size = Vector3(3.0, 0.8, 0.2)
 material = SubResource("Mat_Drywall")
@@ -3253,10 +3289,16 @@ use_collision = true
 size = Vector3(80, 0.1, 60)
 material = SubResource("Mat_Asphalt")
 
-[node name="CondoBuildingBody" type="CSGBox3D" parent="Outside"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, -11.25, -1.75)
+[node name="CondoBuildingBody_W" type="CSGBox3D" parent="Outside"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.25, -11.25, -1.75)
 use_collision = true
-size = Vector3(31.0, 22.5, 18.5)
+size = Vector3(11.5, 22.5, 18.5)
+material = SubResource("Mat_Concrete")
+
+[node name="CondoBuildingBody_E" type="CSGBox3D" parent="Outside"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.75, -11.25, -1.75)
+use_collision = true
+size = Vector3(16.5, 22.5, 18.5)
 material = SubResource("Mat_Concrete")
 
 [node name="CondoTowerA" type="CSGBox3D" parent="Outside"]

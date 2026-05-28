@@ -875,8 +875,8 @@ FY = G + "/Foyer"
 csg_box("Floor", FY, 0.0, -0.05, 2.25, 3.0, 0.1, 2.5, M_WOOD_FLOOR)
 csg_box("Ceiling", FY, 0.0, 2.75, 2.25, 3.0, 0.1, 2.5, M_DRYWALL2)
 csg_box("WallWest", FY, -1.6, 1.4, 2.25, 0.2, 2.8, 2.5, M_DRYWALL2)
-# Note: WallEast removed — it clipped 10 cm into the Balcony (X=1.5) and had
-# no light source, causing a large black plane visible from the balcony.
+# WallEast separates the public Foyer from the private Balcony completely
+csg_box("WallEast", FY, 1.5, 1.4, 2.25, 0.1, 2.8, 2.5, M_DRYWALL2)
 
 # Smoke filling the Foyer from Living Room
 smoke_particle("FoyerSmoke", FY, 0.0, 2.5, 2.25, vel=0.2, lifetime=4.0)
@@ -942,9 +942,21 @@ add_sub("Shp_BalconySign", "BoxMesh", ['size = Vector3(1.5, 0.4, 0.05)'])
 node("SharedCorridor", "Node3D", "Geometry", [])
 SC = "Geometry/SharedCorridor"
 
-# Corridor Floor spans Z = [3.5, 6.5] - extended to X = -10.1
-csg_box("CorridorFloor", SC, 2.45, -0.05, 5.0, 25.1, 0.1, 3.0, M_CARPET_CORRIDOR)
-csg_box("CorridorCeiling", SC, 2.45, 2.85, 5.0, 25.1, 0.1, 3.0, M_DRYWALL)
+# Corridor Floor split around the balcony gap (X=[1.5, 4.5], Z=[3.5, 4.7])
+# West segment: X=[-10.1, 1.5] (width 11.6, center -4.3)
+csg_box("CorridorFloor_W", SC, -4.3, -0.05, 5.0, 11.6, 0.1, 3.0, M_CARPET_CORRIDOR)
+# East segment: X=[4.5, 15.0] (width 10.5, center 9.75)
+csg_box("CorridorFloor_E", SC, 9.75, -0.05, 5.0, 10.5, 0.1, 3.0, M_CARPET_CORRIDOR)
+# Middle segment (with 1.2m gap): X=[1.5, 4.5], Z=[4.7, 6.5] (width 3.0, center 3.0, Z center 5.6, depth 1.8)
+csg_box("CorridorFloor_M", SC, 3.0, -0.05, 5.6, 3.0, 0.1, 1.8, M_CARPET_CORRIDOR)
+
+# Corridor Ceiling split similarly
+csg_box("CorridorCeiling_W", SC, -4.3, 2.85, 5.0, 11.6, 0.1, 3.0, M_DRYWALL)
+csg_box("CorridorCeiling_E", SC, 9.75, 2.85, 5.0, 10.5, 0.1, 3.0, M_DRYWALL)
+csg_box("CorridorCeiling_M", SC, 3.0, 2.85, 5.6, 3.0, 0.1, 1.8, M_DRYWALL)
+
+# Corridor Middle Railing (prevents falling into the gap from the corridor)
+csg_box("CorridorMiddleRail", SC, 3.0, 0.5, 4.65, 3.0, 1.0, 0.1, M_RAILING, collision=True)
 
 # North wall split around foyer opening (X = [-1.5, 1.5])
 # West segment: X = [-10.1, -1.5] (width 8.6)
@@ -952,8 +964,8 @@ csg_box("WallNorth_W", SC, -5.8, 1.4, 3.4, 8.6, 2.8, 0.2, M_DRYWALL)
 # East segments split around balcony opening (X=[1.5,4.5]), Unit 8B door (X=[10.5,11.5]) and Unit 8C door (X=[13.5,14.5]):
 # IMPORTANT: X=[1.5,4.5] left open — this is the balcony slab. Previous code had
 # no gap here which created the black wall blocking the balcony view.
-# Lintel above balcony opening: X=[1.5,4.5], Y=[2.0, 2.8]
-csg_box("WallNorth_BalconyLintel", SC, 3.0, 2.4, 3.4, 3.0, 0.8, 0.2, M_DRYWALL)
+# Lintel above balcony opening shifted to Z = 4.6 to align with the corridor middle segment edge
+csg_box("WallNorth_BalconyLintel", SC, 3.0, 2.4, 4.6, 3.0, 0.8, 0.2, M_DRYWALL)
 # Segment 1 (balcony east edge to 8B door): X=[4.5, 10.5] (width 6.0, center 7.5)
 csg_box("WallNorth_E1", SC, 7.5, 1.4, 3.4, 6.0, 2.8, 0.2, M_DRYWALL)
 # Above Unit 8B Door: X = [10.5, 11.5] (width 1.0, Y = [2.0, 2.8])
@@ -1404,10 +1416,11 @@ OUT = "Outside"
 # Huge Street / driveway covering all voids
 csg_box("StreetFloor", OUT, 0, -22.6, 15, 80, 0.1, 60, M_ASPHALT)
 
-# Condo Tower main building block (floors 1-7 below the level 8 apartment)
-# Positioned at Y = -11.25 (height 22.5m, sitting on Y = -22.5 street floor, extending to Y = 0.0)
-# Covers X = [-10, 21] (width 31m) and Z = [-11, 7.5] (depth 18.5m)
-csg_box("CondoBuildingBody", OUT, 5.5, -11.25, -1.75, 31.0, 22.5, 18.5, M_CONCRETE)
+# Condo Tower main building block split into West and East segments to leave the balcony column (X=[1.5, 4.5]) completely open!
+# West block: X = [-10.0, 1.5] (width 11.5, center -4.25)
+csg_box("CondoBuildingBody_W", OUT, -4.25, -11.25, -1.75, 11.5, 22.5, 18.5, M_CONCRETE)
+# East block: X = [4.5, 21.0] (width 16.5, center 12.75)
+csg_box("CondoBuildingBody_E", OUT, 12.75, -11.25, -1.75, 16.5, 22.5, 18.5, M_CONCRETE)
 
 # Background Condo Tower A (West side, non-enterable decorative skyscraper)
 # Positioned at Y = -2.6 (height 40m, sitting on Y = -22.6, extending to Y = 17.4)

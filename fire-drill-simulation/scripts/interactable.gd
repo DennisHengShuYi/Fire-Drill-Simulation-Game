@@ -39,7 +39,13 @@ var has_shouted_proximity: bool = false
 func _ready():
 	original_rotation_y = rotation.y
 	original_position = global_position
-	collision_layer = 2
+	
+	# The safety ladder remains completely inactive (layer 0) until the player
+	# makes the emergency call from the balcony, preventing premature interaction prompts.
+	if is_safety_ladder:
+		collision_layer = 0
+	else:
+		collision_layer = 2
 	
 	if is_locked_door:
 		has_trapped_npc = randf() < 0.7
