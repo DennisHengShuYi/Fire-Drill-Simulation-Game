@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dway20r56tre"
 path.s3tc="res://.godot/imported/Cama_DefaultMaterial_BaseColor.jpg-4dc47920c44c40b6ef02fb53505a7fa6.s3tc.ctex"
+path.etc2="res://.godot/imported/Cama_DefaultMaterial_BaseColor.jpg-4dc47920c44c40b6ef02fb53505a7fa6.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/bed-3D model/source/textures/Cama_DefaultMaterial_BaseColor.jpg"
-dest_files=["res://.godot/imported/Cama_DefaultMaterial_BaseColor.jpg-4dc47920c44c40b6ef02fb53505a7fa6.s3tc.ctex"]
+dest_files=["res://.godot/imported/Cama_DefaultMaterial_BaseColor.jpg-4dc47920c44c40b6ef02fb53505a7fa6.s3tc.ctex", "res://.godot/imported/Cama_DefaultMaterial_BaseColor.jpg-4dc47920c44c40b6ef02fb53505a7fa6.etc2.ctex"]
 
 [params]
 

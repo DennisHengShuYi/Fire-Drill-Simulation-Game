@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://126v7wglorf1"
 path.s3tc="res://.godot/imported/KitchenShelfs_Base_Color.png-2caa7a657347da89bc8a8dad04963ce9.s3tc.ctex"
+path.etc2="res://.godot/imported/KitchenShelfs_Base_Color.png-2caa7a657347da89bc8a8dad04963ce9.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/kitchen-set-3D model/textures/KitchenShelfs_Base_Color.png"
-dest_files=["res://.godot/imported/KitchenShelfs_Base_Color.png-2caa7a657347da89bc8a8dad04963ce9.s3tc.ctex"]
+dest_files=["res://.godot/imported/KitchenShelfs_Base_Color.png-2caa7a657347da89bc8a8dad04963ce9.s3tc.ctex", "res://.godot/imported/KitchenShelfs_Base_Color.png-2caa7a657347da89bc8a8dad04963ce9.etc2.ctex"]
 
 [params]
 
