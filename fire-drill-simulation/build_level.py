@@ -347,6 +347,25 @@ def sink_static(name, parent, px, py, pz, sx, sy, sz):
         f'material_override = SubResource("{M_TILE_WHITE}")',
     ])
 
+def concrete_wall_static(name, parent, px, py, pz, sx, sy, sz):
+    """Emit a StaticBody3D concrete wall with CollisionShape and Mesh to guarantee collision."""
+    props = [
+        f'transform = {tf(px, py, pz)}',
+        'collision_layer = 1',
+    ]
+    node(name, "StaticBody3D", parent, props)
+
+    shp_sid = add_sub(f"Shp_{name}", "BoxShape3D", [f'size = Vector3({sx}, {sy}, {sz})'])
+    mesh_sid = add_sub(f"Mesh_{name}", "BoxMesh", [f'size = Vector3({sx}, {sy}, {sz})'])
+
+    node("CollisionShape3D", "CollisionShape3D", f"{parent}/{name}", [
+        f'shape = SubResource("{shp_sid}")',
+    ])
+    node("Mesh", "MeshInstance3D", f"{parent}/{name}", [
+        f'mesh = SubResource("{mesh_sid}")',
+        f'material_override = SubResource("{M_CONCRETE}")',
+    ])
+
 def tree_static(name, parent, px, py, pz):
     """Emit a static tree with a trunk and foliage."""
     # Trunk
@@ -923,20 +942,6 @@ for ry_idx in range(58):
 # Balcony outdoor light — needed so the safety-yellow ladder is visible at night
 omni_light("BalconyLight", BL, 3.0, 2.2, 2.25, 2.0, color(0.65, 0.78, 1.0), omni_range=6.0)
 
-# Warning sign prop
-node("BalconySign", "StaticBody3D", G, [
-    f'transform = {tf(3.0, 1.5, 3.55)}',
-    'collision_layer = 2',
-    f'script = ExtResource("2_interactable")',
-    'prompt_message = "Do not jump — assembly point is 8 floors below. Use the fire stairwell!"',
-    'can_feel = false',
-])
-node("Mesh", "MeshInstance3D", G + "/BalconySign", [
-    f'mesh = SubResource("Shp_BalconySign")',
-    f'material_override = SubResource("{M_BALCONY_SIGN}")',
-])
-# Redefine BalconySign shape sub-resource
-add_sub("Shp_BalconySign", "BoxMesh", ['size = Vector3(1.5, 0.4, 0.05)'])
 
 # ── SHARED CORRIDOR ───────────────────────────────────────────────────────────
 node("SharedCorridor", "Node3D", "Geometry", [])
@@ -955,8 +960,21 @@ csg_box("CorridorCeiling_W", SC, -4.3, 2.85, 5.0, 11.6, 0.1, 3.0, M_DRYWALL)
 csg_box("CorridorCeiling_E", SC, 9.75, 2.85, 5.0, 10.5, 0.1, 3.0, M_DRYWALL)
 csg_box("CorridorCeiling_M", SC, 3.0, 2.85, 5.6, 3.0, 0.1, 1.8, M_DRYWALL)
 
-# Corridor Middle Railing (prevents falling into the gap from the corridor)
-csg_box("CorridorMiddleRail", SC, 3.0, 0.5, 4.65, 3.0, 1.0, 0.1, M_RAILING, collision=True)
+# ── Gap perimeter: 4 StaticBody3D walls that fully surround the hole above floor level ──
+# North wall  – south face sits exactly at Z=4.7 (corridor floor edge)
+concrete_wall_static("GapWall_N", SC, 3.0,  0.5, 4.75, 3.0, 1.0, 0.1)
+# South wall  – north face sits exactly at Z=3.5 (balcony floor edge)
+concrete_wall_static("GapWall_S", SC, 3.0,  0.5, 3.45, 3.0, 1.0, 0.1)
+# West wall   – east  face sits exactly at X=1.5 (east edge of CorridorFloor_W)
+concrete_wall_static("GapWall_W", SC, 1.45, 0.5, 4.1,  0.1, 1.0, 1.2)
+# East wall   – west  face sits exactly at X=4.5 (west edge of CorridorFloor_E)
+concrete_wall_static("GapWall_E", SC, 4.55, 0.5, 4.1,  0.1, 1.0, 1.2)
+
+# Grey concrete frame/curbs surrounding the gap (prevents showing hollow voids)
+csg_box("GapConcrete_South", SC, 3.0, -2.475, 3.5, 3.0, 5.05, 0.1, M_CONCRETE)
+csg_box("GapConcrete_North", SC, 3.0, -2.475, 4.7, 3.0, 5.05, 0.1, M_CONCRETE)
+csg_box("GapConcrete_West", SC, 1.5, -2.475, 4.1, 0.1, 5.05, 1.3, M_CONCRETE)
+csg_box("GapConcrete_East", SC, 4.5, -2.475, 4.1, 0.1, 5.05, 1.3, M_CONCRETE)
 
 # North wall split around foyer opening (X = [-1.5, 1.5])
 # West segment: X = [-10.1, -1.5] (width 8.6)

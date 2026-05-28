@@ -1,4 +1,4 @@
-[gd_scene load_steps=109 format=3 uid="uid://condo_firedrill_l8"]
+[gd_scene load_steps=116 format=3 uid="uid://condo_firedrill_l8"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/interactable.gd" id="2_interactable"]
 [ext_resource type="Script" path="res://scripts/smoke_area.gd" id="3_smoke_area"]
@@ -320,8 +320,29 @@ size = Vector3(1.2, 1.2, 1.2)
 [sub_resource type="BoxShape3D" id="Shp_FireParticle3_Hazard"]
 size = Vector3(1.2, 1.2, 1.2)
 
-[sub_resource type="BoxMesh" id="Shp_BalconySign"]
-size = Vector3(1.5, 0.4, 0.05)
+[sub_resource type="BoxShape3D" id="Shp_GapWall_N"]
+size = Vector3(3.0, 1.0, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_GapWall_N"]
+size = Vector3(3.0, 1.0, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shp_GapWall_S"]
+size = Vector3(3.0, 1.0, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_GapWall_S"]
+size = Vector3(3.0, 1.0, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shp_GapWall_W"]
+size = Vector3(0.1, 1.0, 1.2)
+
+[sub_resource type="BoxMesh" id="Mesh_GapWall_W"]
+size = Vector3(0.1, 1.0, 1.2)
+
+[sub_resource type="BoxShape3D" id="Shp_GapWall_E"]
+size = Vector3(0.1, 1.0, 1.2)
+
+[sub_resource type="BoxMesh" id="Mesh_GapWall_E"]
+size = Vector3(0.1, 1.0, 1.2)
 
 [sub_resource type="BoxShape3D" id="Shp_SmokeArea"]
 size = Vector3(22, 1.5, 2.8)
@@ -1941,17 +1962,6 @@ light_color = Color(0.65, 0.78, 1.0, 1)
 light_energy = 2.0
 omni_range = 6.0
 
-[node name="BalconySign" type="StaticBody3D" parent="Geometry/Unit8A"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 1.5, 3.55)
-collision_layer = 2
-script = ExtResource("2_interactable")
-prompt_message = "Do not jump — assembly point is 8 floors below. Use the fire stairwell!"
-can_feel = false
-
-[node name="Mesh" type="MeshInstance3D" parent="Geometry/Unit8A/BalconySign"]
-mesh = SubResource("Shp_BalconySign")
-material_override = SubResource("Mat_BalconySign")
-
 [node name="SharedCorridor" type="Node3D" parent="Geometry"]
 
 [node name="CorridorFloor_W" type="CSGBox3D" parent="Geometry/SharedCorridor"]
@@ -1990,11 +2000,73 @@ use_collision = true
 size = Vector3(3.0, 0.1, 1.8)
 material = SubResource("Mat_Drywall")
 
-[node name="CorridorMiddleRail" type="CSGBox3D" parent="Geometry/SharedCorridor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 0.5, 4.65)
+[node name="GapWall_N" type="StaticBody3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 0.5, 4.75)
+collision_layer = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/SharedCorridor/GapWall_N"]
+shape = SubResource("Shp_GapWall_N")
+
+[node name="Mesh" type="MeshInstance3D" parent="Geometry/SharedCorridor/GapWall_N"]
+mesh = SubResource("Mesh_GapWall_N")
+material_override = SubResource("Mat_Concrete")
+
+[node name="GapWall_S" type="StaticBody3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 0.5, 3.45)
+collision_layer = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/SharedCorridor/GapWall_S"]
+shape = SubResource("Shp_GapWall_S")
+
+[node name="Mesh" type="MeshInstance3D" parent="Geometry/SharedCorridor/GapWall_S"]
+mesh = SubResource("Mesh_GapWall_S")
+material_override = SubResource("Mat_Concrete")
+
+[node name="GapWall_W" type="StaticBody3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 0.5, 4.1)
+collision_layer = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/SharedCorridor/GapWall_W"]
+shape = SubResource("Shp_GapWall_W")
+
+[node name="Mesh" type="MeshInstance3D" parent="Geometry/SharedCorridor/GapWall_W"]
+mesh = SubResource("Mesh_GapWall_W")
+material_override = SubResource("Mat_Concrete")
+
+[node name="GapWall_E" type="StaticBody3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.55, 0.5, 4.1)
+collision_layer = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/SharedCorridor/GapWall_E"]
+shape = SubResource("Shp_GapWall_E")
+
+[node name="Mesh" type="MeshInstance3D" parent="Geometry/SharedCorridor/GapWall_E"]
+mesh = SubResource("Mesh_GapWall_E")
+material_override = SubResource("Mat_Concrete")
+
+[node name="GapConcrete_South" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, -2.475, 3.5)
 use_collision = true
-size = Vector3(3.0, 1.0, 0.1)
-material = SubResource("Mat_Railing")
+size = Vector3(3.0, 5.05, 0.1)
+material = SubResource("Mat_Concrete")
+
+[node name="GapConcrete_North" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, -2.475, 4.7)
+use_collision = true
+size = Vector3(3.0, 5.05, 0.1)
+material = SubResource("Mat_Concrete")
+
+[node name="GapConcrete_West" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -2.475, 4.1)
+use_collision = true
+size = Vector3(0.1, 5.05, 1.3)
+material = SubResource("Mat_Concrete")
+
+[node name="GapConcrete_East" type="CSGBox3D" parent="Geometry/SharedCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, -2.475, 4.1)
+use_collision = true
+size = Vector3(0.1, 5.05, 1.3)
+material = SubResource("Mat_Concrete")
 
 [node name="WallNorth_W" type="CSGBox3D" parent="Geometry/SharedCorridor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8, 1.4, 3.4)
