@@ -1,4 +1,4 @@
-[gd_scene load_steps=116 format=3 uid="uid://condo_firedrill_l8"]
+[gd_scene load_steps=118 format=3 uid="uid://condo_firedrill_l8"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/interactable.gd" id="2_interactable"]
 [ext_resource type="Script" path="res://scripts/smoke_area.gd" id="3_smoke_area"]
@@ -293,6 +293,9 @@ size = Vector3(1.2, 1.2, 1.2)
 [sub_resource type="BoxShape3D" id="Shp_LivingRoomFire2_Hazard"]
 size = Vector3(1.2, 1.2, 1.2)
 
+[sub_resource type="BoxShape3D" id="Shp_U8A_LivingSmoke"]
+size = Vector3(9.0, 1.5, 6.0)
+
 [sub_resource type="BoxShape3D" id="Shp_UnitFrontDoor"]
 size = Vector3(1.0, 2.0, 0.1)
 
@@ -388,6 +391,9 @@ size = Vector3(1.2, 2.0, 0.1)
 
 [sub_resource type="BoxMesh" id="Mesh_LiftB"]
 size = Vector3(1.2, 2.0, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shp_LobbySmoke"]
+size = Vector3(6.0, 1.5, 7.8)
 
 [sub_resource type="BoxShape3D" id="Shp_SuitcaseNPC_Interact"]
 size = Vector3(0.8, 1.8, 0.8)
@@ -1149,6 +1155,14 @@ scale_amount_max = 1.8
 scale_amount_curve = SubResource("Curve_SmokeScale")
 color_ramp = SubResource("Grad_Smoke")
 local_coords = true
+
+[node name="U8A_LivingSmokeArea" type="Area3D" parent="Geometry/Unit8A/LivingDining"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 1.25, -2.0)
+collision_mask = 1
+script = ExtResource("3_smoke_area")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Unit8A/LivingDining/U8A_LivingSmokeArea"]
+shape = SubResource("Shp_U8A_LivingSmoke")
 
 [node name="LivingLight" type="OmniLight3D" parent="Geometry/Unit8A/LivingDining"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 2.5, -2.0)
@@ -2749,6 +2763,58 @@ script = ExtResource("7_elevator")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/ElevatorLobby/ElevatorCabinArea"]
 shape = SubResource("Shp_Cabin")
+
+[node name="LobbySmokeArea" type="Area3D" parent="Geometry/ElevatorLobby"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.0, 1.25, 6.4)
+collision_mask = 1
+script = ExtResource("3_smoke_area")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/ElevatorLobby/LobbySmokeArea"]
+shape = SubResource("Shp_LobbySmoke")
+
+[node name="LobbySmoke1" type="CPUParticles3D" parent="Geometry/ElevatorLobby"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.5, 5.0)
+amount = 60
+lifetime = 4.0
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 60
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.08800000000000001
+initial_velocity_max = 0.22
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
+local_coords = true
+
+[node name="LobbySmoke2" type="CPUParticles3D" parent="Geometry/ElevatorLobby"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, 1.5, 5.0)
+amount = 60
+lifetime = 4.5
+mesh = SubResource("Mesh_SmokeParticle")
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+spread = 55
+gravity = Vector3(0, 0.8, 0)
+initial_velocity_min = 0.08000000000000002
+initial_velocity_max = 0.2
+angular_velocity_min = -25.0
+angular_velocity_max = 25.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+scale_amount_curve = SubResource("Curve_SmokeScale")
+color_ramp = SubResource("Grad_Smoke")
+local_coords = true
 
 [node name="WarnSign" type="CSGBox3D" parent="Geometry/ElevatorLobby"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.8, 1.8, 4.5)

@@ -764,6 +764,17 @@ smoke_particle("LivingRoomSmoke1", LV, 2.0, 2.5, -1.5, vel=0.3, lifetime=4.5)
 smoke_particle("LivingRoomSmoke2", LV, -2.0, 2.5, -1.5, vel=0.25, lifetime=5.0)
 smoke_particle("LivingRoomSmoke3", LV, 0.0, 2.5, 0.5, vel=0.25, lifetime=4.5)
 
+# Smoke Area for Unit 8A Living Room
+node("U8A_LivingSmokeArea", "Area3D", LV, [
+    f'transform = {tf(-0.5, 1.25, -2.0)}',
+    'collision_mask = 1',
+    f'script = ExtResource("3_smoke_area")',
+])
+shp_u8a_living_smoke = add_sub("Shp_U8A_LivingSmoke", "BoxShape3D", ['size = Vector3(9.0, 1.5, 6.0)'])
+node("CollisionShape3D", "CollisionShape3D", f"{LV}/U8A_LivingSmokeArea", [
+    f'shape = SubResource("{shp_u8a_living_smoke}")',
+])
+
 # Living Room Light
 omni_light("LivingLight", LV, -0.5, 2.5, -2.0, 1.6, color(1.0, 0.95, 0.88),
            flicker=True, fl_min=1.3, fl_max=1.8, fl_speed=4.0)
@@ -1221,6 +1232,21 @@ node("ElevatorCabinArea", "Area3D", EL, [
 node("CollisionShape3D", "CollisionShape3D", f"{EL}/ElevatorCabinArea", [
     f'shape = SubResource("{SHP_CABIN}")',
 ])
+
+# Smoke Area for Elevator Lobby & Cabins
+node("LobbySmokeArea", "Area3D", EL, [
+    f'transform = {tf(18.0, 1.25, 6.4)}',
+    'collision_mask = 1',
+    f'script = ExtResource("3_smoke_area")',
+])
+shp_lobby_smoke = add_sub("Shp_LobbySmoke", "BoxShape3D", ['size = Vector3(6.0, 1.5, 7.8)'])
+node("CollisionShape3D", "CollisionShape3D", f"{EL}/LobbySmokeArea", [
+    f'shape = SubResource("{shp_lobby_smoke}")',
+])
+
+# Smoke particles in Elevator Lobby
+smoke_particle("LobbySmoke1", EL, 16.5, 1.5, 5.0, col=(0.18,0.15,0.12,0.4), vel=0.22, spread=60, lifetime=4.0)
+smoke_particle("LobbySmoke2", EL, 19.5, 1.5, 5.0, col=(0.16,0.14,0.11,0.35), vel=0.2, spread=55, lifetime=4.5)
 
 # Warning sign
 csg_box("WarnSign", EL, 20.8, 1.8, 4.5, 0.8, 0.4, 0.05, M_WARN_SIGN, collision=False)
