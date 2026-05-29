@@ -193,7 +193,7 @@ func setup_look_area():
 	look_area.offset_top = 0.0
 	look_area.offset_right = 0.0
 	look_area.offset_bottom = 0.0
-	look_area.mouse_filter = Control.MOUSE_FILTER_PASS
+	look_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(look_area)
 
 func setup_crouch_button():
@@ -522,7 +522,7 @@ func _process(delta):
 	else:
 		if crosshair:
 			crosshair.visible = true
-		look_area.mouse_filter = Control.MOUSE_FILTER_PASS
+		look_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
 	# 5. PASS Minigame State
 	if player.in_extinguisher_minigame:
@@ -619,6 +619,33 @@ func animate_button_vis(btn: Button, target_vis: bool):
 		tween.tween_property(btn, "scale", Vector2(0.85, 0.85), 0.12)
 		tween.chain().tween_callback(func(): btn.visible = false)
 
+func is_position_over_gui(pos: Vector2) -> bool:
+	# 1. Objectives Panel
+	if is_instance_valid(player) and is_instance_valid(player.objectives_panel) and player.objectives_panel.is_visible_in_tree():
+		if player.objectives_panel.get_global_rect().has_point(pos):
+			return true
+			
+	# 2. Main buttons on mobile HUD
+	if is_instance_valid(pause_btn) and pause_btn.is_visible_in_tree() and pause_btn.get_global_rect().has_point(pos):
+		return true
+	if is_instance_valid(crouch_btn) and crouch_btn.is_visible_in_tree() and crouch_btn.get_global_rect().has_point(pos):
+		return true
+	if is_instance_valid(interact_btn) and interact_btn.is_visible_in_tree() and interact_btn.get_global_rect().has_point(pos):
+		return true
+		
+	# 3. Secondary context buttons
+	if is_instance_valid(secondary_container) and secondary_container.is_visible_in_tree():
+		for child in secondary_container.get_children():
+			if child is Control and child.is_visible_in_tree() and child.get_global_rect().has_point(pos):
+				return true
+				
+	# 4. PASS Minigame button
+	if is_instance_valid(pass_container) and pass_container.is_visible_in_tree() and is_instance_valid(pass_btn) and pass_btn.is_visible_in_tree():
+		if pass_btn.get_global_rect().has_point(pos):
+			return true
+			
+	return false
+
 func _input(event):
 	if not is_instance_valid(player) or player.is_paused:
 		return
@@ -641,7 +668,8 @@ func _input(event):
 					update_joystick_knob(joystick_center + offset)
 			# Any touch not on/near the joystick base acts as the camera look drag (full screen drag zone)
 			elif look_touch_index == -1 and event.index != joystick_touch_index:
-				look_touch_index = event.index
+				if not is_position_over_gui(event.position):
+					look_touch_index = event.index
 		else:
 			if event.index == joystick_touch_index:
 				reset_joystick()

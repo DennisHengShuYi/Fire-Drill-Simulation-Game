@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
-@export var speed: float = 2.5
-@export var sprint_speed: float = 5.0
+@export var speed: float = 1.8
+@export var sprint_speed: float = 3.6
 @export var gravity: float = 9.8
 @export var mouse_sensitivity: float = 0.002
 
@@ -33,6 +33,7 @@ var log_timer: float = 0.0
 var phone_active: bool = false
 var dialed_number: String = ""
 var call_state: int = 0
+var current_objectives_tab: int = 0
 
 @export var teleport_target_pos: Vector3 = Vector3(0, 0, 0)
 var is_outside: bool = false
@@ -62,6 +63,7 @@ var current_extinguisher: Node = null
 var has_extinguisher: bool = false
 var carried_extinguisher_ref: Node = null
 var hand_extinguisher_mesh: MeshInstance3D = null
+var extinguisher_pickup_frame: int = -1
 
 # --- Pause ---
 var is_paused: bool = false
@@ -191,6 +193,10 @@ func _input(event):
 			toggle_pause()
 		return
 
+	if event is InputEventKey and event.pressed and event.keycode == KEY_O:
+		cycle_objectives_tab()
+		return
+
 	if is_paused:
 		return
 
@@ -214,6 +220,8 @@ func _input(event):
 		return
 
 	if has_extinguisher and not in_extinguisher_minigame and not phone_active:
+		if Engine.get_process_frames() == extinguisher_pickup_frame:
+			return
 		var want_use = false
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			want_use = true
@@ -930,8 +938,8 @@ func setup_objectives_panel():
 	objectives_panel.anchor_bottom = 0.0
 	objectives_panel.offset_left = 10
 	objectives_panel.offset_top = 100
-	objectives_panel.offset_right = 290
-	objectives_panel.offset_bottom = 340
+	objectives_panel.offset_right = 320
+	objectives_panel.offset_bottom = 390
 	$HUD.add_child(objectives_panel)
 
 	var title_lbl = Label.new()
@@ -941,34 +949,83 @@ func setup_objectives_panel():
 	title_lbl.position = Vector2(8, 6)
 	objectives_panel.add_child(title_lbl)
 
+	# Tab Buttons (HBoxContainer) at y=24
+	var hbox = HBoxContainer.new()
+	hbox.name = "HBoxContainer"
+	hbox.position = Vector2(8, 24)
+	hbox.size = Vector2(294, 25)
+	objectives_panel.add_child(hbox)
+
+	var btn_stairs = Button.new()
+	btn_stairs.name = "BtnStairs"
+	btn_stairs.text = "Stairs"
+	btn_stairs.add_theme_font_size_override("font_size", 10)
+	btn_stairs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_stairs.pressed.connect(func(): select_objectives_tab(0))
+	hbox.add_child(btn_stairs)
+
+	var btn_balcony = Button.new()
+	btn_balcony.name = "BtnBalcony"
+	btn_balcony.text = "Balcony"
+	btn_balcony.add_theme_font_size_override("font_size", 10)
+	btn_balcony.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_balcony.pressed.connect(func(): select_objectives_tab(1))
+	hbox.add_child(btn_balcony)
+
+	var btn_seal = Button.new()
+	btn_seal.name = "BtnSeal"
+	btn_seal.text = "Seal"
+	btn_seal.add_theme_font_size_override("font_size", 10)
+	btn_seal.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_seal.pressed.connect(func(): select_objectives_tab(2))
+	hbox.add_child(btn_seal)
+
+	# ScrollContainer at y=54, height=228
+	var scroll = ScrollContainer.new()
+	scroll.name = "ScrollContainer"
+	scroll.position = Vector2(8, 54)
+	scroll.size = Vector2(294, 228)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	objectives_panel.add_child(scroll)
+
+	var vbox = VBoxContainer.new()
+	vbox.name = "VBoxContainer"
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(vbox)
+
 	objectives_label = Label.new()
 	objectives_label.name = "ObjectivesText"
 	objectives_label.add_theme_font_size_override("font_size", 12)
 	objectives_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-	objectives_label.position = Vector2(8, 24)
-	objectives_label.size = Vector2(270, 208)
 	objectives_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	objectives_panel.add_child(objectives_label)
+	objectives_label.custom_minimum_size = Vector2(278, 0)
+	vbox.add_child(objectives_label)
 
 	_update_objectives()
 
 func _update_objectives():
 	if not objectives_label:
 		return
-	var c = "✓"
-	var e = "☐"
-	var lines = [
-		"%s Feel bedroom door before opening" % (c if GameManager.felt_bedroom_door else e),
-		"%s Stay low in smoke (crouch)" % (c if GameManager.crouched_in_smoke else e),
-		"%s Check kitchen door (hot!)" % (c if GameManager.felt_kitchen_door else e),
-		"%s Get wet towel — optional" % (c if GameManager.got_wet_towel else e),
-		"%s Pull fire alarm call point" % (c if GameManager.alarm_triggered else e),
-		"%s Seal bedroom door — optional" % (c if GameManager.sealed_door else e),
-		"%s Correct panicking resident" % (c if GameManager.corrected_npc else e),
-		"%s Use stairs, not the lift" % (c if GameManager.used_stairs else e),
-		"%s Call BOMBA 999 outside" % (c if GameManager.called_999 else e),
-	]
-	objectives_label.text = "\n".join(lines)
+	objectives_label.text = _get_objectives_text(false)
+
+	# Update button colors
+	var btn_s = objectives_panel.get_node_or_null("HBoxContainer/BtnStairs")
+	var btn_b = objectives_panel.get_node_or_null("HBoxContainer/BtnBalcony")
+	var btn_l = objectives_panel.get_node_or_null("HBoxContainer/BtnSeal")
+
+	if btn_s:
+		btn_s.add_theme_color_override("font_color", Color(1, 0.8, 0.2) if current_objectives_tab == 0 else Color(0.8, 0.8, 0.8))
+	if btn_b:
+		btn_b.add_theme_color_override("font_color", Color(1, 0.8, 0.2) if current_objectives_tab == 1 else Color(0.8, 0.8, 0.8))
+	if btn_l:
+		btn_l.add_theme_color_override("font_color", Color(1, 0.8, 0.2) if current_objectives_tab == 2 else Color(0.8, 0.8, 0.8))
+
+func select_objectives_tab(tab_idx: int):
+	play_tick_beep()
+	current_objectives_tab = tab_idx
+	_update_objectives()
+	_update_pause_objectives()
 
 func setup_pause_panel():
 	pause_panel = Panel.new()
@@ -985,9 +1042,9 @@ func setup_pause_panel():
 	pause_panel.anchor_right = 0.5
 	pause_panel.anchor_bottom = 0.5
 	pause_panel.offset_left = -220
-	pause_panel.offset_top = -210
+	pause_panel.offset_top = -260
 	pause_panel.offset_right = 220
-	pause_panel.offset_bottom = 210
+	pause_panel.offset_bottom = 260
 	pause_panel.visible = false
 	$HUD.add_child(pause_panel)
 
@@ -999,7 +1056,7 @@ func setup_pause_panel():
 	pause_panel.add_child(title)
 
 	var ctrl_lbl = Label.new()
-	ctrl_lbl.text = "Controls:\n  WASD — Move        Shift — Sprint\n  C / Ctrl — Crouch  E — Interact\n  F — Feel door      Tab — Toggle objectives\n  ESC — Pause / Resume"
+	ctrl_lbl.text = "Controls:\n  WASD — Move        Shift — Sprint\n  C / Ctrl — Crouch  E — Interact\n  F — Feel door      Tab — Toggle objectives\n  O — Switch objectives tab  ESC — Pause / Resume"
 	ctrl_lbl.add_theme_font_size_override("font_size", 13)
 	ctrl_lbl.position = Vector2(20, 56)
 	pause_panel.add_child(ctrl_lbl)
@@ -1015,13 +1072,13 @@ func setup_pause_panel():
 	_pause_obj_label.name = "PauseObjLabel"
 	_pause_obj_label.add_theme_font_size_override("font_size", 11)
 	_pause_obj_label.position = Vector2(20, 214)
-	_pause_obj_label.size = Vector2(400, 155)
+	_pause_obj_label.size = Vector2(400, 240)
 	pause_panel.add_child(_pause_obj_label)
 
 	var quit_btn = Button.new()
 	quit_btn.text = "Quit to Main Menu"
 	quit_btn.size = Vector2(180, 36)
-	quit_btn.position = Vector2(130, 378)
+	quit_btn.position = Vector2(130, 468)
 	quit_btn.pressed.connect(func():
 		get_tree().paused = false
 		GameManager.reset_state()
@@ -1032,20 +1089,96 @@ func setup_pause_panel():
 func _update_pause_objectives():
 	if not _pause_obj_label:
 		return
-	var c = "✓"
-	var e = "☐"
-	var lines = [
-		"%s Feel bedroom door before opening" % (c if GameManager.felt_bedroom_door else e),
-		"%s Stay low in smoke (crouch)" % (c if GameManager.crouched_in_smoke else e),
-		"%s Check kitchen door (hot!)" % (c if GameManager.felt_kitchen_door else e),
-		"%s Get wet towel — optional" % (c if GameManager.got_wet_towel else e),
-		"%s Pull fire alarm call point" % (c if GameManager.alarm_triggered else e),
-		"%s Seal bedroom door — optional" % (c if GameManager.sealed_door else e),
-		"%s Correct panicking resident" % (c if GameManager.corrected_npc else e),
-		"%s Use stairs, not the lift" % (c if GameManager.used_stairs else e),
-		"%s Call BOMBA 999 outside" % (c if GameManager.called_999 else e),
-	]
-	_pause_obj_label.text = "\n".join(lines)
+	_pause_obj_label.text = _get_objectives_text(true)
+
+func cycle_objectives_tab():
+	current_objectives_tab = (current_objectives_tab + 1) % 3
+	_update_objectives()
+	_update_pause_objectives()
+
+func _get_objectives_text(is_pause: bool = false) -> String:
+	var bedroom_door = get_node_or_null("/root/Level/Geometry/Unit8A/BedroomDoor")
+	var opened_bedroom_door = (bedroom_door and bedroom_door.door_opened) or (global_position.x > -2.0 or global_position.z > -5.0)
+	var bedroom_door_closed = bedroom_door and not bedroom_door.door_opened
+	var in_master_bedroom = global_position.x < -2.0 and global_position.z < -5.0
+	var on_balcony = (global_position.x > 1.4 and global_position.x < 4.6 and global_position.z > 0.9 and global_position.z < 3.6)
+	var corrected_resident = GameManager.corrected_npc or GameManager.ignored_npc
+
+	var current_tasks = []
+	if current_objectives_tab == 0:
+		current_tasks = [
+			{"label": "Pick up Mobile Phone", "done": has_mobile_phone},
+			{"label": "Feel bedroom door before opening", "done": GameManager.felt_bedroom_door},
+			{"label": "Open bedroom door and exit", "done": opened_bedroom_door},
+			{"label": "Stay low in smoke corridor (crouch)", "done": GameManager.crouched_in_smoke},
+			{"label": "Get wet towel from bathroom (optional)", "done": GameManager.got_wet_towel},
+			{"label": "Feel kitchen door (check handle heat)", "done": GameManager.felt_kitchen_door},
+			{"label": "Pull fire alarm manual call point", "done": GameManager.alarm_triggered},
+			{"label": "Correct resident with suitcase", "done": corrected_resident},
+			{"label": "Use stairs to evacuate (avoid lift)", "done": GameManager.used_stairs},
+			{"label": "Walk to safe assembly point", "done": is_outside},
+			{"label": "Call BOMBA 999 from safe zone", "done": GameManager.called_999}
+		]
+	elif current_objectives_tab == 1:
+		current_tasks = [
+			{"label": "Pick up Mobile Phone (mandatory)", "done": has_mobile_phone},
+			{"label": "Feel bedroom door before opening", "done": GameManager.felt_bedroom_door},
+			{"label": "Open bedroom door and exit", "done": opened_bedroom_door},
+			{"label": "Stay low in smoke corridor (crouch)", "done": GameManager.crouched_in_smoke},
+			{"label": "Get wet towel from bathroom (optional)", "done": GameManager.got_wet_towel},
+			{"label": "Feel kitchen door (check handle heat)", "done": GameManager.felt_kitchen_door},
+			{"label": "Pull fire alarm manual call point", "done": GameManager.alarm_triggered},
+			{"label": "Evacuate to the balcony", "done": on_balcony},
+			{"label": "Call BOMBA 999 on mobile phone", "done": has_called_bomba},
+			{"label": "Climb down the safety ladder", "done": false}
+		]
+	else:
+		current_tasks = [
+			{"label": "Pick up Mobile Phone (mandatory)", "done": has_mobile_phone},
+			{"label": "Feel bedroom door before opening", "done": GameManager.felt_bedroom_door},
+			{"label": "Open bedroom door and exit", "done": opened_bedroom_door},
+			{"label": "Stay low in smoke corridor (crouch)", "done": GameManager.crouched_in_smoke},
+			{"label": "Get wet towel from bathroom (mandatory)", "done": GameManager.got_wet_towel},
+			{"label": "Feel kitchen door (check handle heat)", "done": GameManager.felt_kitchen_door},
+			{"label": "Pull fire alarm manual call point", "done": GameManager.alarm_triggered},
+			{"label": "Return to bedroom & close door", "done": in_master_bedroom and bedroom_door_closed},
+			{"label": "Seal bedroom door with wet towel", "done": GameManager.sealed_door},
+			{"label": "Call BOMBA 999 from bedroom", "done": false}
+		]
+
+	var text = ""
+	if is_pause:
+		var tab_headers = [
+			"[1. STAIRS]  2. Balcony  3. Seal",
+			"1. Stairs  [2. BALCONY]  3. Seal",
+			"1. Stairs  2. Balcony  [3. SEAL]"
+		]
+		text = tab_headers[current_objectives_tab] + "\nPress [O] to switch endings/tabs\n────────────────────────────\n"
+	else:
+		text = "Press [O] or tap tabs to switch\n────────────────────────────\n"
+	
+	var active_found = false
+	for i in range(current_tasks.size()):
+		var task = current_tasks[i]
+		var prefix = ""
+		if task["done"]:
+			prefix = "  ✓ "
+		else:
+			var is_optional = task["label"].to_lower().contains("optional")
+			var subsequent_done = false
+			if is_optional:
+				for j in range(i + 1, current_tasks.size()):
+					if current_tasks[j]["done"]:
+						subsequent_done = true
+						break
+			
+			if not active_found and not subsequent_done:
+				prefix = "➔ "
+				active_found = true
+			else:
+				prefix = "  ☐ "
+		text += prefix + task["label"] + "\n"
+	return text
 
 
 # ---------------------------------------------------------------------------

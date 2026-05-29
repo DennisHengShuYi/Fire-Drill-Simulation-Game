@@ -335,6 +335,8 @@ func pick_up_extinguisher(player: CharacterBody3D):
 	# Pick up
 	player.has_extinguisher = true
 	player.carried_extinguisher_ref = self
+	if "extinguisher_pickup_frame" in player:
+		player.extinguisher_pickup_frame = Engine.get_process_frames()
 	
 	# Hide visually and disable collision/interaction
 	visible = false

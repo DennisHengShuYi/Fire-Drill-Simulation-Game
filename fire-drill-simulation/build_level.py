@@ -550,9 +550,10 @@ G = "Geometry/Unit8A"
 node("MasterBedroom", "Node3D", G, [])
 MB = G + "/MasterBedroom"
 # Floor spans X = [-9.0, -2.0], Z = [-11.0, -5.0]
-csg_box("Floor", MB, -5.5, -0.05, -8.0, 7.0, 0.1, 6.0, M_CARPET_MASTER)
-# Ceiling spans X = [-9.0, -2.0], Z = [-11.0, -5.0]
-csg_box("Ceiling", MB, -5.5, 2.75, -8.0, 7.0, 0.1, 6.0, M_DRYWALL)
+csg_box("FloorNorth", MB, -5.5, -0.05, -9.5, 7.0, 0.1, 3.0, M_CARPET_MASTER)
+csg_box("FloorSouth", MB, -4.0, -0.05, -6.5, 4.0, 0.1, 3.0, M_CARPET_MASTER)
+csg_box("CeilingNorth", MB, -5.5, 2.75, -9.5, 7.0, 0.1, 3.0, M_DRYWALL)
+csg_box("CeilingSouth", MB, -4.0, 2.75, -6.5, 4.0, 0.1, 3.0, M_DRYWALL)
 # North wall spans X = [-9.0, -2.0] at Z = -11.1
 csg_box("WallNorth", MB, -5.5, 1.4, -11.1, 7.0, 2.8, 0.2, M_DRYWALL)
 # South wall spans X = [-6.0, -2.0] at Z = -4.9 (leaving SW corner free for Ensuite)
@@ -1462,9 +1463,9 @@ csg_box("StreetFloor", OUT, 0, -22.6, 15, 80, 0.1, 60, M_ASPHALT)
 
 # Condo Tower main building block split into West and East segments to leave the balcony column (X=[1.5, 4.5]) completely open!
 # West block: X = [-10.0, 1.5] (width 11.5, center -4.25)
-csg_box("CondoBuildingBody_W", OUT, -4.25, -11.25, -1.75, 11.5, 22.5, 18.5, M_CONCRETE)
+csg_box("CondoBuildingBody_W", OUT, -4.25, -11.35, -1.75, 11.5, 22.3, 18.5, M_CONCRETE)
 # East block: X = [4.5, 21.0] (width 16.5, center 12.75)
-csg_box("CondoBuildingBody_E", OUT, 12.75, -11.25, -1.75, 16.5, 22.5, 18.5, M_CONCRETE)
+csg_box("CondoBuildingBody_E", OUT, 12.75, -11.35, -1.75, 16.5, 22.3, 18.5, M_CONCRETE)
 
 # Background Condo Tower A (West side, non-enterable decorative skyscraper)
 # Positioned at Y = -2.6 (height 40m, sitting on Y = -22.6, extending to Y = 17.4)
@@ -1522,8 +1523,8 @@ for f_idx in range(1, 8):
         csg_box(f"Window_S_{f_idx}_{int(x_win)}", OUT, x_win, y_win, 7.52, 1.2, 1.4, 0.05, M_CONCRETE_DARK, collision=False)
 
 # Grass borders on sides of driveway to populate the void
-csg_box("GrassWest", OUT, -25.0, -22.58, 15.0, 20.0, 0.05, 50.0, M_ASSEMBLY, collision=True)
-csg_box("GrassEast", OUT, 25.0, -22.58, 25.0, 20.0, 0.05, 30.0, M_ASSEMBLY, collision=True)
+csg_box("GrassWest", OUT, -25.0, -22.45, 15.0, 20.0, 0.3, 50.0, M_ASSEMBLY, collision=True)
+csg_box("GrassEast", OUT, 25.0, -22.45, 25.0, 20.0, 0.3, 30.0, M_ASSEMBLY, collision=True)
 
 # Trees on grass
 tree_static("Tree_W1", OUT, -18.0, -22.6, 15.0)
@@ -1536,7 +1537,7 @@ streetlight_static("Streetlight_W", OUT, -14.0, -22.6, 15.0)
 streetlight_static("Streetlight_E", OUT, 14.0, -22.6, 20.0)
 
 # Assembly point
-csg_box("AssemblyZone", OUT, -8, -22.55, 22, 8, 0.05, 6, M_ASSEMBLY)
+csg_box("AssemblyZone", OUT, -8, -22.52, 22, 8, 0.05, 6, M_ASSEMBLY)
 omni_light("AssemblyLight", OUT, -8, -20, 22, 2.0, color(0.5, 1.0, 0.5), omni_range=10.0)
 
 

@@ -432,21 +432,32 @@ teleport_target_pos = Vector3(-8, -22.3, 22)
 
 [node name="Geometry" type="Node3D" parent="."]
 
-[node name="Unit8A" type="CSGCombiner3D" parent="Geometry"]
-use_collision = true
+[node name="Unit8A" type="Node3D" parent="Geometry"]
 
 [node name="MasterBedroom" type="Node3D" parent="Geometry/Unit8A"]
 
-[node name="Floor" type="CSGBox3D" parent="Geometry/Unit8A/MasterBedroom"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, -0.05, -8.0)
+[node name="FloorNorth" type="CSGBox3D" parent="Geometry/Unit8A/MasterBedroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, -0.05, -9.5)
 use_collision = true
-size = Vector3(7.0, 0.1, 6.0)
+size = Vector3(7.0, 0.1, 3.0)
 material = SubResource("Mat_CarpetMaster")
 
-[node name="Ceiling" type="CSGBox3D" parent="Geometry/Unit8A/MasterBedroom"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 2.75, -8.0)
+[node name="FloorSouth" type="CSGBox3D" parent="Geometry/Unit8A/MasterBedroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.0, -0.05, -6.5)
 use_collision = true
-size = Vector3(7.0, 0.1, 6.0)
+size = Vector3(4.0, 0.1, 3.0)
+material = SubResource("Mat_CarpetMaster")
+
+[node name="CeilingNorth" type="CSGBox3D" parent="Geometry/Unit8A/MasterBedroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 2.75, -9.5)
+use_collision = true
+size = Vector3(7.0, 0.1, 3.0)
+material = SubResource("Mat_Drywall")
+
+[node name="CeilingSouth" type="CSGBox3D" parent="Geometry/Unit8A/MasterBedroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.0, 2.75, -6.5)
+use_collision = true
+size = Vector3(4.0, 0.1, 3.0)
 material = SubResource("Mat_Drywall")
 
 [node name="WallNorth" type="CSGBox3D" parent="Geometry/Unit8A/MasterBedroom"]
@@ -1977,8 +1988,7 @@ light_color = Color(0.65, 0.78, 1.0, 1)
 light_energy = 2.0
 omni_range = 6.0
 
-[node name="SharedCorridor" type="CSGCombiner3D" parent="Geometry"]
-use_collision = true
+[node name="SharedCorridor" type="Node3D" parent="Geometry"]
 
 [node name="CorridorFloor_W" type="CSGBox3D" parent="Geometry/SharedCorridor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, -0.05, 5.0)
@@ -2331,8 +2341,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.0, 0)
 mesh = SubResource("Mesh_Unit8C_CorridorDoor")
 material_override = SubResource("Mat_WoodDoor")
 
-[node name="Unit8B" type="CSGCombiner3D" parent="Geometry"]
-use_collision = true
+[node name="Unit8B" type="Node3D" parent="Geometry"]
 
 [node name="LivingFloor" type="CSGBox3D" parent="Geometry/Unit8B"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.75, -0.05, 0.425)
@@ -2617,8 +2626,7 @@ scale_amount_curve = SubResource("Curve_SmokeScale")
 color_ramp = SubResource("Grad_Smoke")
 local_coords = true
 
-[node name="ElevatorLobby" type="CSGCombiner3D" parent="Geometry"]
-use_collision = true
+[node name="ElevatorLobby" type="Node3D" parent="Geometry"]
 
 [node name="LobbyFloor" type="CSGBox3D" parent="Geometry/ElevatorLobby"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.0, -0.05, 5.0)
@@ -2854,8 +2862,7 @@ light_color = Color(0.85, 0.92, 1.0, 1)
 light_energy = 1.2
 omni_range = 6.0
 
-[node name="Stairwell" type="CSGCombiner3D" parent="Geometry"]
-use_collision = true
+[node name="Stairwell" type="Node3D" parent="Geometry"]
 
 [node name="ShaftWallNorth" type="CSGBox3D" parent="Geometry/Stairwell"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, -10.0, -4.9)
@@ -3424,8 +3431,7 @@ start_waypoint = 12
 [node name="NPCSpawner" type="Node3D" parent="Geometry/Stairwell"]
 script = ExtResource("11_npc_spawner")
 
-[node name="Outside" type="CSGCombiner3D" parent="."]
-use_collision = true
+[node name="Outside" type="Node3D" parent="."]
 
 [node name="StreetFloor" type="CSGBox3D" parent="Outside"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -22.6, 15)
@@ -3434,15 +3440,15 @@ size = Vector3(80, 0.1, 60)
 material = SubResource("Mat_Asphalt")
 
 [node name="CondoBuildingBody_W" type="CSGBox3D" parent="Outside"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.25, -11.25, -1.75)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.25, -11.35, -1.75)
 use_collision = true
-size = Vector3(11.5, 22.5, 18.5)
+size = Vector3(11.5, 22.3, 18.5)
 material = SubResource("Mat_Concrete")
 
 [node name="CondoBuildingBody_E" type="CSGBox3D" parent="Outside"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.75, -11.25, -1.75)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.75, -11.35, -1.75)
 use_collision = true
-size = Vector3(16.5, 22.5, 18.5)
+size = Vector3(16.5, 22.3, 18.5)
 material = SubResource("Mat_Concrete")
 
 [node name="CondoTowerA" type="CSGBox3D" parent="Outside"]
@@ -4717,15 +4723,15 @@ size = Vector3(1.2, 1.4, 0.05)
 material = SubResource("Mat_ConcreteDark")
 
 [node name="GrassWest" type="CSGBox3D" parent="Outside"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.0, -22.58, 15.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.0, -22.45, 15.0)
 use_collision = true
-size = Vector3(20.0, 0.05, 50.0)
+size = Vector3(20.0, 0.3, 50.0)
 material = SubResource("Mat_Assembly")
 
 [node name="GrassEast" type="CSGBox3D" parent="Outside"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.0, -22.58, 25.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.0, -22.45, 25.0)
 use_collision = true
-size = Vector3(20.0, 0.05, 30.0)
+size = Vector3(20.0, 0.3, 30.0)
 material = SubResource("Mat_Assembly")
 
 [node name="Tree_W1_Trunk" type="CSGBox3D" parent="Outside"]
@@ -4807,7 +4813,7 @@ light_energy = 1.5
 omni_range = 12.0
 
 [node name="AssemblyZone" type="CSGBox3D" parent="Outside"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, -22.55, 22)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, -22.52, 22)
 use_collision = true
 size = Vector3(8, 0.05, 6)
 material = SubResource("Mat_Assembly")
