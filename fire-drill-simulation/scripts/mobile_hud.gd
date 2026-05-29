@@ -630,22 +630,16 @@ func _input(event):
 	# Handle all touch events globally for both joystick and camera look
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			# Left 45% = joystick zone (fixed position, but activates from anywhere on left side)
-			if event.position.x < get_viewport().size.x * 0.45:
+			# Check if touch is on/near the fixed joystick base icon (with a slight tolerance buffer)
+			var joy_screen_center = joystick_base.get_global_rect().get_center()
+			if event.position.distance_to(joy_screen_center) <= max_joystick_distance * 1.2:
 				if joystick_touch_index == -1:
 					joystick_active = true
 					joystick_touch_index = event.index
-					# If touch is close to the joystick base center, map absolutely.
-					# Otherwise, map relatively from the initial touch point to avoid jumps.
-					var joy_screen_center = joystick_base.get_global_rect().get_center()
-					if event.position.distance_to(joy_screen_center) <= max_joystick_distance:
-						joystick_touch_start = joy_screen_center
-					else:
-						joystick_touch_start = event.position
-					
+					joystick_touch_start = joy_screen_center
 					var offset = event.position - joystick_touch_start
 					update_joystick_knob(joystick_center + offset)
-			# Right 55% = camera look zone
+			# Any touch not on/near the joystick base acts as the camera look drag (full screen drag zone)
 			elif look_touch_index == -1 and event.index != joystick_touch_index:
 				look_touch_index = event.index
 		else:
@@ -656,7 +650,7 @@ func _input(event):
 				
 	elif event is InputEventScreenDrag:
 		if event.index == joystick_touch_index:
-			# Map drag position relative to initial touch start position
+			# Map drag position relative to initial touch start position (joystick base center)
 			var offset = event.position - joystick_touch_start
 			update_joystick_knob(joystick_center + offset)
 		elif event.index == look_touch_index:
