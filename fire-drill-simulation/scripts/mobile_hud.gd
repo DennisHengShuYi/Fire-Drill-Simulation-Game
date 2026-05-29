@@ -35,11 +35,15 @@ var pass_btn: Button = null
 # Joystick state variables
 var joystick_active = false
 var joystick_touch_index = -1
-var joystick_center = Vector2(65, 65) # center of 130x130 base
-var max_joystick_distance = 65.0
+var joystick_center = Vector2(90, 90) # center of 180x180 base
+var max_joystick_distance = 90.0
+var joystick_touch_start = Vector2.ZERO
 
 # Swipe camera look variables
 var look_touch_index = -1
+
+# Crosshair node
+var crosshair: Control = null
 
 func _ready():
 	# Keep processing even when paused so pause button and UI still work
@@ -53,6 +57,7 @@ func _ready():
 	setup_pause_button()
 	setup_secondary_buttons()
 	setup_pass_minigame()
+	setup_crosshair()
 	
 	# Connect to resize signals if any, or just rely on anchors
 	get_viewport().size_changed.connect(on_viewport_resize)
@@ -124,47 +129,47 @@ func initialize_styleboxes():
 	style_interact_extinguisher.corner_radius_bottom_left = 45
 
 func setup_joystick():
-	# Joystick Base
+	# Joystick Base — 180x180, anchored bottom-left clear of objectives panel
 	joystick_base = Panel.new()
 	joystick_base.name = "JoystickBase"
-	joystick_base.custom_minimum_size = Vector2(130, 130)
+	joystick_base.custom_minimum_size = Vector2(180, 180)
 	
 	var base_style = StyleBoxFlat.new()
-	base_style.bg_color = Color(0.15, 0.15, 0.15, 0.45)
+	base_style.bg_color = Color(0.15, 0.15, 0.15, 0.5)
 	base_style.border_width_left = 3
 	base_style.border_width_top = 3
 	base_style.border_width_right = 3
 	base_style.border_width_bottom = 3
-	base_style.border_color = Color(0.85, 0.85, 0.85, 0.35)
-	base_style.corner_radius_top_left = 65
-	base_style.corner_radius_top_right = 65
-	base_style.corner_radius_bottom_right = 65
-	base_style.corner_radius_bottom_left = 65
+	base_style.border_color = Color(0.85, 0.85, 0.85, 0.45)
+	base_style.corner_radius_top_left = 90
+	base_style.corner_radius_top_right = 90
+	base_style.corner_radius_bottom_right = 90
+	base_style.corner_radius_bottom_left = 90
 	joystick_base.add_theme_stylebox_override("panel", base_style)
 	
-	# Anchor Bottom-Left: 20px offset
+	# Anchor Bottom-Left: push up higher so it doesn't overlap the objectives panel
 	joystick_base.anchor_left = 0.0
 	joystick_base.anchor_top = 1.0
 	joystick_base.anchor_right = 0.0
 	joystick_base.anchor_bottom = 1.0
-	joystick_base.offset_left = 30.0
-	joystick_base.offset_top = -160.0
-	joystick_base.offset_right = 160.0
-	joystick_base.offset_bottom = -30.0
+	joystick_base.offset_left = 20.0
+	joystick_base.offset_top = -270.0
+	joystick_base.offset_right = 200.0
+	joystick_base.offset_bottom = -90.0
 	joystick_base.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	add_child(joystick_base)
 	
-	# Joystick Knob
+	# Joystick Knob — larger knob for bigger base
 	joystick_knob = Panel.new()
 	joystick_knob.name = "JoystickKnob"
-	joystick_knob.custom_minimum_size = Vector2(55, 55)
+	joystick_knob.custom_minimum_size = Vector2(70, 70)
 	
 	var knob_style = StyleBoxFlat.new()
-	knob_style.bg_color = Color(0.95, 0.95, 0.95, 0.75)
-	knob_style.corner_radius_top_left = 27
-	knob_style.corner_radius_top_right = 27
-	knob_style.corner_radius_bottom_right = 27
-	knob_style.corner_radius_bottom_left = 27
+	knob_style.bg_color = Color(0.95, 0.95, 0.95, 0.8)
+	knob_style.corner_radius_top_left = 35
+	knob_style.corner_radius_top_right = 35
+	knob_style.corner_radius_bottom_right = 35
+	knob_style.corner_radius_bottom_left = 35
 	joystick_knob.add_theme_stylebox_override("panel", knob_style)
 	
 	joystick_base.add_child(joystick_knob)
@@ -174,13 +179,13 @@ func setup_joystick():
 	joystick_base.gui_input.connect(_on_joystick_base_gui_input)
 
 func reset_joystick_knob_pos():
-	joystick_knob.position = joystick_center - Vector2(27.5, 27.5)
+	joystick_knob.position = joystick_center - Vector2(35, 35)
 
 func setup_look_area():
-	# Look Area Covers the right 55% of the screen
+	# Look Area covers the FULL screen — joystick takes priority via index tracking
 	look_area = Control.new()
 	look_area.name = "LookArea"
-	look_area.anchor_left = 0.45
+	look_area.anchor_left = 0.0
 	look_area.anchor_top = 0.0
 	look_area.anchor_right = 1.0
 	look_area.anchor_bottom = 1.0
@@ -394,6 +399,46 @@ func setup_pass_minigame():
 	pass_btn.pressed.connect(_on_pass_pressed)
 	pass_container.add_child(pass_btn)
 
+func setup_crosshair():
+	# Dot crosshair at the center of the screen
+	crosshair = Control.new()
+	crosshair.name = "Crosshair"
+	crosshair.anchor_left = 0.5
+	crosshair.anchor_top = 0.5
+	crosshair.anchor_right = 0.5
+	crosshair.anchor_bottom = 0.5
+	crosshair.offset_left = -12.0
+	crosshair.offset_top = -12.0
+	crosshair.offset_right = 12.0
+	crosshair.offset_bottom = 12.0
+	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Draw a simple dot using a ColorRect centered in the control
+	var dot = ColorRect.new()
+	dot.color = Color(1.0, 1.0, 1.0, 0.85)
+	dot.size = Vector2(6, 6)
+	dot.position = Vector2(9, 9) # center of 24x24 control
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Horizontal bar
+	var h_bar = ColorRect.new()
+	h_bar.color = Color(1.0, 1.0, 1.0, 0.6)
+	h_bar.size = Vector2(16, 2)
+	h_bar.position = Vector2(4, 11)
+	h_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Vertical bar
+	var v_bar = ColorRect.new()
+	v_bar.color = Color(1.0, 1.0, 1.0, 0.6)
+	v_bar.size = Vector2(2, 16)
+	v_bar.position = Vector2(11, 4)
+	v_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	crosshair.add_child(h_bar)
+	crosshair.add_child(v_bar)
+	crosshair.add_child(dot)
+	add_child(crosshair)
+
 func on_viewport_resize():
 	# Make sure anchors remain intact and update limits if needed
 	pass
@@ -465,7 +510,21 @@ func _process(delta):
 	# 3. Update Secondary Contextual Buttons Visibility
 	update_secondary_button_states()
 	
-	# 4. PASS Minigame State
+	# 4. Phone active OR dilemma active — hide joystick/look so panel buttons are tappable
+	if player.phone_active or player.dilemma_active:
+		joystick_base.visible = false
+		look_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		crouch_btn.visible = false
+		interact_btn.visible = false
+		if crosshair:
+			crosshair.visible = false
+		return
+	else:
+		if crosshair:
+			crosshair.visible = true
+		look_area.mouse_filter = Control.MOUSE_FILTER_PASS
+	
+	# 5. PASS Minigame State
 	if player.in_extinguisher_minigame:
 		pass_container.visible = true
 		crouch_btn.visible = false
@@ -564,13 +623,31 @@ func _input(event):
 	if not is_instance_valid(player) or player.is_paused:
 		return
 		
-	# Global input index checks to handle movement dragging and camera rotation dragging
+	# Ignore all touch drag inputs during modal overlays (phone, dilemma dialogue, or PASS minigame)
+	if player.phone_active or player.dilemma_active or player.in_extinguisher_minigame:
+		return
+		
+	# Handle all touch events globally for both joystick and camera look
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			# Look swipe area starts if touch is in right 55% of the viewport and not on other buttons
-			if event.position.x > get_viewport().size.x * 0.45:
-				if look_touch_index == -1 and event.index != joystick_touch_index:
-					look_touch_index = event.index
+			# Left 45% = joystick zone (fixed position, but activates from anywhere on left side)
+			if event.position.x < get_viewport().size.x * 0.45:
+				if joystick_touch_index == -1:
+					joystick_active = true
+					joystick_touch_index = event.index
+					# If touch is close to the joystick base center, map absolutely.
+					# Otherwise, map relatively from the initial touch point to avoid jumps.
+					var joy_screen_center = joystick_base.get_global_rect().get_center()
+					if event.position.distance_to(joy_screen_center) <= max_joystick_distance:
+						joystick_touch_start = joy_screen_center
+					else:
+						joystick_touch_start = event.position
+					
+					var offset = event.position - joystick_touch_start
+					update_joystick_knob(joystick_center + offset)
+			# Right 55% = camera look zone
+			elif look_touch_index == -1 and event.index != joystick_touch_index:
+				look_touch_index = event.index
 		else:
 			if event.index == joystick_touch_index:
 				reset_joystick()
@@ -579,28 +656,16 @@ func _input(event):
 				
 	elif event is InputEventScreenDrag:
 		if event.index == joystick_touch_index:
-			# Localize coordinates for knob calculation
-			var local_pos = joystick_base.make_input_local(event).position
-			update_joystick_knob(local_pos)
+			# Map drag position relative to initial touch start position
+			var offset = event.position - joystick_touch_start
+			update_joystick_knob(joystick_center + offset)
 		elif event.index == look_touch_index:
-			# Rotate camera
 			if not player.phone_active and not player.dilemma_active and not player.in_elevator_sequence:
 				player.apply_touch_look(event.relative)
 
 func _on_joystick_base_gui_input(event):
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			if not joystick_active:
-				joystick_active = true
-				joystick_touch_index = event.index
-				update_joystick_knob(event.position)
-		else:
-			if event.index == joystick_touch_index:
-				reset_joystick()
-				
-	elif event is InputEventScreenDrag:
-		if event.index == joystick_touch_index:
-			update_joystick_knob(event.position)
+	# Input is handled globally in _input() for wide touch detection
+	pass
 
 func update_joystick_knob(pos: Vector2):
 	var offset = pos - joystick_center
@@ -609,7 +674,7 @@ func update_joystick_knob(pos: Vector2):
 	if distance > max_joystick_distance:
 		offset = offset.normalized() * max_joystick_distance
 		
-	joystick_knob.position = (joystick_center - Vector2(27.5, 27.5)) + offset
+	joystick_knob.position = (joystick_center - Vector2(35, 35)) + offset
 	
 	var norm_dir = offset / max_joystick_distance
 	var strength_x = norm_dir.x
@@ -636,8 +701,8 @@ func update_joystick_knob(pos: Vector2):
 		_parse_action("move_forward", false, 0.0)
 		_parse_action("move_backward", false, 0.0)
 		
-	# Sprint check - Outer 30% of analog range triggers sprint
-	if (distance / max_joystick_distance) >= 0.7:
+	# Sprint check - Outer 10% of analog range triggers sprint (push joystick to the very edge)
+	if (distance / max_joystick_distance) >= 0.9:
 		_parse_action("sprint", true, 1.0)
 	else:
 		_parse_action("sprint", false, 0.0)
