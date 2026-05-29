@@ -654,7 +654,7 @@ func _input(event):
 			var offset = event.position - joystick_touch_start
 			update_joystick_knob(joystick_center + offset)
 		elif event.index == look_touch_index:
-			if not player.phone_active and not player.dilemma_active and not player.in_elevator_sequence:
+			if not player.phone_active and not player.dilemma_active:
 				player.apply_touch_look(event.relative)
 
 func _on_joystick_base_gui_input(event):

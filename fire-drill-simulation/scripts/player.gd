@@ -1,6 +1,6 @@
 extends CharacterBody3D
 
-@export var speed: float = 3.5
+@export var speed: float = 2.5
 @export var sprint_speed: float = 5.0
 @export var gravity: float = 9.8
 @export var mouse_sensitivity: float = 0.002
@@ -90,12 +90,19 @@ var stamina_bar: ProgressBar = null
 # --- Contextual tips ---
 var shown_tips: Dictionary = {}
 var tip_check_timer: float = 0.0
+var _phys_tick: float = 0.0
+
+func _print_node_recursive(node: Node, indent: String = ""):
+	push_error(indent + node.name + " (" + node.get_class() + ")")
+	for child in node.get_children():
+		_print_node_recursive(child, indent + "  ")
 
 func set_mouse_mode_safe(mode: int):
 	if OS.get_name() not in ["Android", "iOS"]:
 		Input.mouse_mode = mode as Input.MouseMode
 
 func _ready():
+	push_error("[Player] _ready start")
 	# BUG 3 companion: keep this node processing even when the tree is paused
 	# so ESC and the quit button still work inside the pause panel.
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -103,12 +110,18 @@ func _ready():
 	set_mouse_mode_safe(Input.MOUSE_MODE_CAPTURED)
 	
 	if OS.get_name() == "Android" or OS.get_name() == "iOS":
+		push_error("[Player] Loading mobile HUD")
 		var hud = load("res://scenes/mobile_hud.tscn").instantiate()
+		push_error("[Player] Mobile HUD loaded and instantiated")
 		add_child(hud)
+		push_error("[Player] Mobile HUD added as child")
 		hud.player = self
 		mouse_captured = false
 		if is_instance_valid(prompt_label):
 			prompt_label.visible = false
+		var crosshair = get_node_or_null("HUD/Crosshair")
+		if crosshair:
+			crosshair.visible = false
 
 	phone_panel.visible = false
 	smoke_overlay.color.a = 0.0
@@ -116,6 +129,7 @@ func _ready():
 	carried_extinguisher_ref = null
 	hide_hand_extinguisher()
 
+	push_error("[Player] Setting up phone dialer connections")
 	for btn in $HUD/PhonePanel/GridContainer.get_children():
 		if btn is Button:
 			if btn.name in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
@@ -129,13 +143,21 @@ func _ready():
 	current_time = time_limit
 	# teleport_target_pos is set via @export in the scene inspector (level.tscn).
 
+	push_error("[Player] Running setup functions")
 	setup_timer_hud()
+	push_error("[Player] Timer HUD setup done")
 	setup_vignette()
+	push_error("[Player] Vignette setup done")
 	setup_wet_towel_hud()
+	push_error("[Player] Wet towel HUD setup done")
 	setup_stamina_hud()
+	push_error("[Player] Stamina HUD setup done")
 	setup_objectives_panel()
+	push_error("[Player] Objectives panel setup done")
 	setup_pause_panel()
+	push_error("[Player] Pause panel setup done")
 	setup_mobile_phone_hud()
+	push_error("[Player] Mobile phone HUD setup done")
 
 	# Prevent LogPanel from overlapping with TimerPanel and OxygenPanel at any resolution
 	var log_panel = $HUD/LogPanel
@@ -146,6 +168,9 @@ func _ready():
 		log_panel.offset_right = -280.0
 
 	show_log_message("FIRE ALARM RINGING! Find a way out safely!")
+	push_error("[Player] Printing active scene tree:")
+	_print_node_recursive(get_tree().root)
+	push_error("[Player] _ready completed successfully")
 
 
 
@@ -179,7 +204,7 @@ func _input(event):
 	if phone_active:
 		return
 
-	if not phone_active and not in_extinguisher_minigame and event is InputEventKey and event.pressed and event.keycode == KEY_X:
+	if not phone_active and not in_extinguisher_minigame and (event.is_action_pressed("seal_door") or (event is InputEventKey and event.pressed and event.keycode == KEY_X)):
 		if raycast.is_colliding():
 			var collider = raycast.get_collider()
 			if collider is Interactable and collider.is_door and not collider.door_opened and collider.name.to_lower().contains("bedroom"):
@@ -247,6 +272,10 @@ func toggle_pause():
 func _physics_process(delta):
 	if not is_inside_tree():
 		return
+	_phys_tick += delta
+	if _phys_tick >= 1.0:
+		_phys_tick = 0.0
+		push_error("[Player] physics tick, position: ", global_position, " oxygen: ", current_oxygen, " time: ", current_time)
 	if climbing_ladder:
 		global_position.y -= ladder_climb_speed * delta
 		camera.rotation.x = deg_to_rad(-25.0)
@@ -271,21 +300,26 @@ func _physics_process(delta):
 					dilemma_door.resolve_dilemma(self, 2)
 		return
 
-	if phone_active or in_elevator_sequence or in_extinguisher_minigame:
+	if phone_active or in_elevator_sequence:
 		velocity = Vector3.ZERO
 		move_and_slide()
-		if in_extinguisher_minigame:
-			var steps = [
-				"[P] Pull the pin!",
-				"[A] Aim at the base of the fire!",
-				"[S] Squeeze the handle!",
-				"[S] Sweep side-to-side!"
-			]
-			prompt_label.text = "PASS TECHNIQUE MINIGAME\nStep %d/4: %s" % [minigame_step + 1, steps[minigame_step]]
-			process_smoke_inhalation(delta)
-		elif in_elevator_sequence:
+		if in_elevator_sequence:
 			camera.position.x = randf_range(-0.015, 0.015)
 			camera.position.y = lerp(camera.position.y, stand_height - 0.2 + randf_range(-0.015, 0.015), 5.0 * delta)
+		return
+
+	# Only freeze movement during the PASS minigame steps, not while carrying
+	if in_extinguisher_minigame:
+		velocity = Vector3.ZERO
+		move_and_slide()
+		var steps = [
+			"[P] Pull the pin!",
+			"[A] Aim at the base of the fire!",
+			"[S] Squeeze the handle!",
+			"[S] Sweep side-to-side!"
+		]
+		prompt_label.text = "PASS TECHNIQUE MINIGAME\nStep %d/4: %s" % [minigame_step + 1, steps[minigame_step]]
+		process_smoke_inhalation(delta)
 		return
 
 	if is_paused:
@@ -340,9 +374,7 @@ func _physics_process(delta):
 	if Input.is_action_just_pressed("crouch"):
 		is_crouching = not is_crouching
 	
-	# Sprinting cancels crouch automatically if moving
-	if is_crouching and Input.is_action_pressed("sprint") and can_sprint and velocity.length() > 0.1:
-		is_crouching = false
+	# NOTE: Sprinting while crouching keeps crouch active — crouch_speed handles velocity reduction.
 
 	var target_height = crouch_height if is_crouching else stand_height
 	if is_crouching and in_smoke_zone:
@@ -885,15 +917,16 @@ func setup_objectives_panel():
 	style.corner_radius_bottom_left = 6
 	style.corner_radius_bottom_right = 6
 	objectives_panel.add_theme_stylebox_override("panel", style)
-	# Anchor to bottom-left corner
+	# Anchor to TOP-LEFT, below the timer panel (timer is at y=20, height=70)
+	# This avoids overlap with the joystick at bottom-left
 	objectives_panel.anchor_left = 0.0
-	objectives_panel.anchor_top = 1.0
+	objectives_panel.anchor_top = 0.0
 	objectives_panel.anchor_right = 0.0
-	objectives_panel.anchor_bottom = 1.0
+	objectives_panel.anchor_bottom = 0.0
 	objectives_panel.offset_left = 10
-	objectives_panel.offset_top = -240
+	objectives_panel.offset_top = 100
 	objectives_panel.offset_right = 290
-	objectives_panel.offset_bottom = -10
+	objectives_panel.offset_bottom = 340
 	$HUD.add_child(objectives_panel)
 
 	var title_lbl = Label.new()

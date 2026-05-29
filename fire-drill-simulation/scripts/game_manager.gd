@@ -69,7 +69,8 @@ func setup_inputs():
 		"feel_door": [KEY_F],
 		"knock_door": [KEY_K],
 		"dilemma_1": [KEY_1],
-		"dilemma_2": [KEY_2]
+		"dilemma_2": [KEY_2],
+		"seal_door": [KEY_X]
 	}
 
 	for action in inputs.keys():
