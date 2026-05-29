@@ -26,6 +26,8 @@ func _on_node_added(node: Node) -> void:
 	# (e.g. fire spread copies created by fire_area.gd at runtime)
 	if not _is_mobile:
 		return
+	if not is_instance_valid(node) or not node.is_inside_tree():
+		return
 	if node is CPUParticles3D:
 		_optimize_particles(node)
 	elif node is OmniLight3D or node is SpotLight3D:
@@ -37,6 +39,11 @@ func _apply_scene_optimizations() -> void:
 	if not is_instance_valid(scene):
 		return
 	print("[MobileOptimizer] Optimizing scene: ", scene.name)
+	# Disable glow — expensive extra GPU passes on mobile GL
+	var world_env = scene.find_child("WorldEnvironment", true, false)
+	if world_env and world_env.environment:
+		world_env.environment.glow_enabled = false
+		print("[MobileOptimizer] Glow disabled")
 	_walk_and_optimize(scene)
 
 

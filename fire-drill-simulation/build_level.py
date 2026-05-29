@@ -542,7 +542,7 @@ lines.append("")
 node("Geometry", "Node3D", ".", [])
 
 # ── UNIT 8A ──────────────────────────────────────────────────────────────────
-node("Unit8A", "Node3D", "Geometry", [])
+node("Unit8A", "Node3D", "Geometry", None)
 
 G = "Geometry/Unit8A"
 
@@ -955,7 +955,7 @@ omni_light("BalconyLight", BL, 3.0, 2.2, 2.25, 2.0, color(0.65, 0.78, 1.0), omni
 
 
 # ── SHARED CORRIDOR ───────────────────────────────────────────────────────────
-node("SharedCorridor", "Node3D", "Geometry", [])
+node("SharedCorridor", "Node3D", "Geometry", None)
 SC = "Geometry/SharedCorridor"
 
 # Corridor Floor split around the balcony gap (X=[1.5, 4.5], Z=[3.5, 4.7])
@@ -1095,7 +1095,7 @@ door_static("Unit8C_CorridorDoor", SC, 14.0, 0, 3.4,
 #   Bedroom:                     X=[9.0,12.0], Z=[-7.5,-2.5]  (3.0m × 5.0m)
 #   Bathroom:                    X=[12.0,14.5],Z=[-7.5,-2.5]  (2.5m × 5.0m)
 #   South wall = shared with corridor north wall (already built above)
-node("Unit8B", "Node3D", "Geometry", [])
+node("Unit8B", "Node3D", "Geometry", None)
 U8B = "Geometry/Unit8B"
 
 # ── Floors & Ceilings ──
@@ -1180,7 +1180,7 @@ smoke_particle("U8B_Smoke1", U8B, 11.0, 2.4, 1.5, vel=0.1, lifetime=5.0)
 smoke_particle("U8B_Smoke2", U8B, 11.75, 2.4, -0.5, vel=0.08, lifetime=6.0)
 
 # ── ELEVATOR LOBBY ───────────────────────────────────────────────────────────
-node("ElevatorLobby", "Node3D", "Geometry", [])
+node("ElevatorLobby", "Node3D", "Geometry", None)
 EL = "Geometry/ElevatorLobby"
 
 csg_box("LobbyFloor", EL, 18.0, -0.05, 5.0, 6.0, 0.1, 5.0, M_MARBLE)
@@ -1285,7 +1285,7 @@ node("ElevatorHum", "AudioStreamPlayer3D", EL, [
 omni_light("CabinLight", EL, 18, 2.5, 8.9, 1.2, color(0.85, 0.92, 1.0))
 
 # ── STAIRWELL ────────────────────────────────────────────────────────────────
-node("Stairwell", "Node3D", "Geometry", [])
+node("Stairwell", "Node3D", "Geometry", None)
 SW = "Geometry/Stairwell"
 
 # Stairwell shaft walls
@@ -1454,7 +1454,7 @@ node("NPCSpawner", "Node3D", SW, [
 
 
 # ── OUTSIDE ──────────────────────────────────────────────────────────────────
-node("Outside", "Node3D", ".", [])
+node("Outside", "Node3D", ".", None)
 OUT = "Outside"
 
 # Huge Street / driveway covering all voids

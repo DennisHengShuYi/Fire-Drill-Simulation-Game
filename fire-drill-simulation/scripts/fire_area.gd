@@ -8,6 +8,7 @@ const MAX_GROWTH_STAGES: int = 4
 var is_spread_copy: bool = false
 
 func _ready():
+	add_to_group("fires")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	
@@ -30,7 +31,7 @@ func _ready():
 func _on_body_entered(body):
 	if body.has_method("process_smoke_inhalation") and "in_fire_zone" in body:
 		tracked_player = body
-		var active_fires = body.get_meta("active_fires", [])
+		var active_fires = body.get_meta("active_fires") if body.has_meta("active_fires") else []
 		if not active_fires.has(self):
 			active_fires.append(self)
 			body.set_meta("active_fires", active_fires)
@@ -39,7 +40,7 @@ func _on_body_entered(body):
 func _on_body_exited(body):
 	if body == tracked_player:
 		if is_instance_valid(tracked_player):
-			var active_fires = tracked_player.get_meta("active_fires", [])
+			var active_fires = tracked_player.get_meta("active_fires") if tracked_player.has_meta("active_fires") else []
 			active_fires.erase(self)
 			tracked_player.set_meta("active_fires", active_fires)
 			if active_fires.size() == 0:
