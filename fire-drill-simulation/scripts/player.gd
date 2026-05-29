@@ -204,22 +204,9 @@ func _input(event):
 	if phone_active:
 		return
 
-	if not phone_active and not in_extinguisher_minigame and (event.is_action_pressed("seal_door") or (event is InputEventKey and event.pressed and event.keycode == KEY_X)):
-		if raycast.is_colliding():
-			var collider = raycast.get_collider()
-			if collider is Interactable and collider.is_door and not collider.door_opened and collider.name.to_lower().contains("bedroom"):
-				if not collider.is_sealed:
-					if has_wet_towel:
-						collider.is_sealed = true
-						has_wet_towel = false # consume wet towel
-						if wet_towel_label:
-							wet_towel_label.visible = false
-						show_log_message("You sealed the bedroom door gap using your wet towel to block smoke.")
-						GameManager.sealed_door = true
-						collider.play_sound_3d("sizzle")
-					else:
-						show_log_message("You need a wet towel to seal the door gap!")
-				return
+	if not phone_active and not in_extinguisher_minigame and event is InputEventKey and event.pressed and event.keycode == KEY_X:
+		try_seal_door()
+		return
 
 	if in_extinguisher_minigame:
 		if event is InputEventKey and event.pressed:
@@ -452,6 +439,22 @@ func _physics_process(delta):
 # Interaction
 # ---------------------------------------------------------------------------
 
+func try_seal_door():
+	if raycast.is_colliding():
+		var collider = raycast.get_collider()
+		if collider is Interactable and collider.is_door and not collider.door_opened and collider.name.to_lower().contains("bedroom"):
+			if not collider.is_sealed:
+				if has_wet_towel:
+					collider.is_sealed = true
+					has_wet_towel = false # consume wet towel
+					if wet_towel_label:
+						wet_towel_label.visible = false
+					show_log_message("You sealed the bedroom door gap using your wet towel to block smoke.")
+					GameManager.sealed_door = true
+					collider.play_sound_3d("sizzle")
+				else:
+					show_log_message("You need a wet towel to seal the door gap!")
+
 func check_interaction():
 	if raycast.is_colliding():
 		var collider = raycast.get_collider()
@@ -464,6 +467,8 @@ func check_interaction():
 				show_log_message(feel_msg)
 			elif Input.is_action_just_pressed("knock_door") and collider.has_method("knock"):
 				collider.knock(self)
+			elif Input.is_action_just_pressed("seal_door"):
+				try_seal_door()
 			return
 	if has_extinguisher:
 		prompt_label.text = "[Left-Click] or [E] Use Fire Extinguisher"
